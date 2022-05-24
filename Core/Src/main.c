@@ -33,10 +33,11 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 //Filter PD
-#define BLOCK_SIZE            		1
+#define BLOCK_SIZE            		32
 #define NUMBER_COEFS              	5
 #define NUMBER_STAGE              	1
-#define LENGTH_DATA 				15807
+#define LENGTH_WHOLE_DATA 			15807
+#define LENGTH_DATA 				1280
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -55,10 +56,12 @@ PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
 //Data acquisition PV
-extern float32_t data_ir[LENGTH_DATA];
+extern float32_t data_ir[LENGTH_WHOLE_DATA];
+float32_t block_data_ir[LENGTH_DATA];
 uint8_t rd_dat = 0;
 
 //Filter PV
+uint32_t block_size = BLOCK_SIZE;
 uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;
 uint32_t m;
 arm_biquad_cascade_df2T_instance_f32 S;
@@ -134,7 +137,7 @@ int main(void)
   heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);		//Disable interruption when a new sample is in FIFO
 
   //Filter variables
-  inputF32_ir = &data_ir[0]; //Initialize input buffer pointers
+  inputF32_ir = &block_data_ir[0]; //Initialize input buffer pointers
   outputF32_ir = &testOutput_ir[0]; //Initialize output buffer pointers
   arm_biquad_cascade_df2T_init_f32(&S,(uint8_t)NUMBER_STAGE,(const float32_t *)&firCoeffs32[0], (float32_t *)&firStateF32[0]);
 
@@ -143,12 +146,50 @@ int main(void)
   HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7); // Toggle The Output (LED) Pin (Blue) to see the main
   HAL_Delay(2000);
 
-  for(m=0; m < numBlocks; m++)
+  //Divide samples by blocks
+  for (m=0;m<LENGTH_DATA;m++)
   {
-	  arm_biquad_cascade_df2T_f32(&S, inputF32_ir+(m*BLOCK_SIZE), outputF32_ir+(m*BLOCK_SIZE), BLOCK_SIZE);
-	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&testOutput_ir[m], 4, 1000);
-	  HAL_Delay(1);
+	  block_data_ir[m]=data_ir[m];
   }
+
+  //Filter 1 samples
+  IIR_filter();
+
+  //Divide samples by blocks
+  for (m=0;m<LENGTH_DATA;m++)
+  {
+	  block_data_ir[m]=data_ir[m+LENGTH_DATA];
+  }
+
+  //Filter 2 samples
+  IIR_filter();
+
+  //Divide samples by blocks
+for (m=0;m<LENGTH_DATA;m++)
+{
+  block_data_ir[m]=data_ir[m+2*LENGTH_DATA];
+}
+
+//Filter 3 samples
+IIR_filter();
+
+//Divide samples by blocks
+  for (m=0;m<LENGTH_DATA;m++)
+  {
+	  block_data_ir[m]=data_ir[m+3*LENGTH_DATA];
+  }
+
+  //Filter 4 samples
+  IIR_filter();
+
+  //Divide samples by blocks
+    for (m=0;m<LENGTH_DATA;m++)
+    {
+  	  block_data_ir[m]=data_ir[m+4*LENGTH_DATA];
+    }
+
+    //Filter 5 samples
+    IIR_filter();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -486,6 +527,20 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 	    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9); // Toggle The Output (LED) Pin (Red) to see the interrupt
 	}
 }
+
+void IIR_filter(void)
+{
+	for(m = 0; m < numBlocks; m++)
+	{
+		  arm_biquad_cascade_df2T_f32(&S, inputF32_ir+(m*block_size), outputF32_ir+(m*block_size), block_size);
+		  //HAL_UART_Transmit(&hlpuart1, (uint8_t*)&testOutput_ir[m], 4*block_size, 1000);
+	}
+	for(m = 0; m < LENGTH_DATA; m++)
+	{
+		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&testOutput_ir[m], (uint16_t)4, 1000);
+	}
+}
+
 /* USER CODE END 4 */
 
 /**
