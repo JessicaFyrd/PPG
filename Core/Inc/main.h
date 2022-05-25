@@ -46,7 +46,7 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
+void IIR_filter(void);
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

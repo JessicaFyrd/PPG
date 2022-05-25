@@ -33,10 +33,10 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 //Filter PD
-#define BLOCK_SIZE            		1
+#define BLOCK_SIZE            		20
 #define NUMBER_COEFS              	5
 #define NUMBER_STAGE              	1
-#define LENGTH_DATA 				15807
+#define LENGTH_DATA 				600
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -54,11 +54,13 @@ RTC_HandleTypeDef hrtc;
 PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
-//Data acquisition PV
-extern float32_t data_ir[LENGTH_DATA];
-uint8_t rd_dat = 0;
+data_TypeDef data;
+uint8_t rd_dat = 0,number_available_samples = 0, i = 0, flag_filter = 0;
+static uint8_t j = 0;
 
 //Filter PV
+float32_t block_data_ir[LENGTH_DATA];
+uint32_t block_size = BLOCK_SIZE;
 uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;
 uint32_t m;
 arm_biquad_cascade_df2T_instance_f32 S;
@@ -123,40 +125,34 @@ int main(void)
   MX_ICACHE_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
-  //Sensor init
   heartrate10_return_value_t err_t;
   err_t = heartrate10_default_cfg(hi2c2);
   if (err_t!=0){
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
   }
 
-  //Sensor changes
   heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);		//Disable interruption when a new sample is in FIFO
+  heartrate10_A_FULL_EN(MAX86916_A_FULL_EN);		//Enable interruption when the number of data in FIFO reach the waterlevel (initialize by default at 20 samples)
 
   //Filter variables
-  inputF32_ir = &data_ir[0]; //Initialize input buffer pointers
+  inputF32_ir = &block_data_ir[0]; //Initialize input buffer pointers
   outputF32_ir = &testOutput_ir[0]; //Initialize output buffer pointers
   arm_biquad_cascade_df2T_init_f32(&S,(uint8_t)NUMBER_STAGE,(const float32_t *)&firCoeffs32[0], (float32_t *)&firStateF32[0]);
 
-  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7); // Toggle The Output (LED) Pin (Blue) to see the main
-  HAL_Delay(2000);
-  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7); // Toggle The Output (LED) Pin (Blue) to see the main
-  HAL_Delay(2000);
-
-  for(m=0; m < numBlocks; m++)
-  {
-	  arm_biquad_cascade_df2T_f32(&S, inputF32_ir+(m*BLOCK_SIZE), outputF32_ir+(m*BLOCK_SIZE), BLOCK_SIZE);
-	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&testOutput_ir[m], 4, 1000);
-	  HAL_Delay(1);
-  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7); // Toggle The Output (LED) Pin (Blue) to see the main
-	  HAL_Delay(1000);
+	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET); // Set the Output (LED) Pin (Red) high to see the interrupt
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+	  if (flag_filter == 1)
+	  {
+		  IIR_filter();
+		  j = 0;
+		  flag_filter = 0;
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -483,8 +479,31 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin == GPIO_PIN_3) // If The INT Source Is EXTI Line3
 	{
-	    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9); // Toggle The Output (LED) Pin (Red) to see the interrupt
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET); // Set the Output (LED) Pin (Red) high to see the interrupt
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+			number_available_samples=heartrate10_number_available_samples();
+			READ(HEARTRATE10_REG_INT_STATUS, &rd_dat);
+			//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&number_available_samples, 1, 1000);
+			for(i=0;i<block_size;i++)
+			{
+				heartrate10_read_complete_fifo_data(&data);
+				//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data, 16, 1000);
+				block_data_ir[i+j*block_size]=(float32_t)data.ir;
+				//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&block_data_ir[i+j*block_size], 4, 1000);
+			}
+			//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&j, 1, 1000);
+			j++;
+			if (j >= numBlocks)
+			{
+				flag_filter = 1;
+			}
 	}
+}
+
+void IIR_filter(void)
+{
+	arm_biquad_cascade_df2T_f32(&S, inputF32_ir, outputF32_ir, LENGTH_DATA);
+	HAL_UART_Transmit(&hlpuart1, (uint8_t*)testOutput_ir, (uint16_t)4*LENGTH_DATA, 1000);
 }
 /* USER CODE END 4 */
 
