@@ -37,10 +37,10 @@ I2C_HandleTypeDef I2C;
 HAL_StatusTypeDef fifo_read;
 uint8_t buf_r=0; // Read value
 uint8_t buf[32]={0}; // Write value
-data_TypeDef dat;
+data_4leds_TypeDef dat;
 
 //Functions
-heartrate10_return_value_t heartrate10_default_cfg(I2C_HandleTypeDef i2c)
+heartrate10_return_value_t heartrate10_default_4leds_cfg(I2C_HandleTypeDef i2c)
 {
 	I2C=i2c;
 
@@ -91,17 +91,10 @@ heartrate10_return_value_t heartrate10_default_cfg(I2C_HandleTypeDef i2c)
 
     //Set led power
     buf[0]=0xFF; //nominal current pulse amplitude of 50.4 mA for all the LEDs
-    SEND(HEARTRATE10_REG_LED1_PA, buf);//IR
-    READ(HEARTRATE10_REG_LED1_PA, &buf_r);
-
-    SEND(HEARTRATE10_REG_LED2_PA, buf);//RED
-    READ(HEARTRATE10_REG_LED2_PA, &buf_r);
-
-    SEND(HEARTRATE10_REG_LED3_PA, buf);//GREEN
-    READ(HEARTRATE10_REG_LED3_PA, &buf_r);
-
-    SEND(HEARTRATE10_REG_LED4_PA, buf);//BLUE
-    READ(HEARTRATE10_REG_LED4_PA, &buf_r);
+    heartrate10_led_power_1(buf[0]); //IR
+    heartrate10_led_power_2(buf[0]); //RED
+    heartrate10_led_power_3(buf[0]); //GREEN
+    heartrate10_led_power_4(buf[0]); //BLUE
 
     //Sample average
     heartrate10_FIFO_SAMPLE_AVERAGE(MAX86916_FIFO_SAMPLE_AVERAGE_1);
@@ -123,6 +116,85 @@ heartrate10_return_value_t heartrate10_default_cfg(I2C_HandleTypeDef i2c)
 
     return HEARTRATE10_OK;
 }
+
+heartrate10_return_value_t heartrate10_default_2leds_cfg(I2C_HandleTypeDef i2c)
+{
+	I2C=i2c;
+
+    //Shutdown device
+	heartrate10_shutdown_device();
+    READ(HEARTRATE10_REG_MODE_CFG1, &buf_r);
+
+    //Reset device
+    heartrate10_reset_device();
+
+    //Part ID
+    READ(HEARTRATE10_REG_PART_ID, &buf_r);
+    if (HEARTRATE10_PART_ID != buf_r)
+    {
+        return HEARTRATE10_ERROR;
+    }
+
+    //Led test
+//	buf[0]=led_enable(LED3);
+//	buf[0]=led_enable(LED2);
+//	buf[0]=led_enable(LED3);
+//	buf[0]=led_enable(LED4);
+
+    //Set flex led mode
+    heartrate10_set_mode(MAX86916_MODE_LED1_LED2);
+
+    //Set led sequences [ IR, RED, GREEN, BLUE ]
+    	//RED-IR
+    heartrate10_set_led_sequence_1(MAX86916_LED_SEQ_LED1);
+    heartrate10_set_led_sequence_2(MAX86916_LED_SEQ_LED2);
+    READ(HEARTRATE10_REG_LED_SEQ1, &buf_r);
+    	//BLUE-GREEN
+    heartrate10_set_led_sequence_3(MAX86916_LED_SEQ_OFF);
+    heartrate10_set_led_sequence_4(MAX86916_LED_SEQ_OFF);
+    READ(HEARTRATE10_REG_LED_SEQ2, &buf_r);
+
+    //Set scale range, sample per second and led pulse widths
+    heartrate10_adc_range(MAX86916_ADC_RANGE_32768);
+    heartrate10_sr(MAX86916_SR_200);
+    heartrate10_led_pulse_width(MAX86916_LED_PW_70);
+    READ(HEARTRATE10_REG_MODE_CFG2, &buf_r);
+
+    //Set led range
+    heartrate10_led_range_1(MAX86916_LED_RANGE_50); //current range 0 to 50 mA for the 4 LEDs
+    heartrate10_led_range_2(MAX86916_LED_RANGE_50);
+    heartrate10_led_range_3(MAX86916_LED_RANGE_50);
+    heartrate10_led_range_4(MAX86916_LED_RANGE_50);
+
+    //Set led power
+    buf[0]=0xFF; //nominal current pulse amplitude of 50.4 mA for all the LEDs
+    heartrate10_led_power_1(buf[0]); 	//IR
+    heartrate10_led_power_2(buf[0]); 	//RED
+    buf[0]=0x00;
+    heartrate10_led_power_3(buf[0]); 	//nominal current pulse amplitude of 0 mA for green LED
+    heartrate10_led_power_4(buf[0]); 	//nominal current pulse amplitude of 0 mA for blue LED
+
+    //Sample average
+    heartrate10_FIFO_SAMPLE_AVERAGE(MAX86916_FIFO_SAMPLE_AVERAGE_1);
+
+    //Enable fifo overflow
+    heartrate10_FIFO_RO(MAX86916_FIFO_RO_EN);
+
+    //Number of unread data for interruption
+    heartrate10_FIFO_A_FULL(MAX86916_FIFO_A_FULL_20);
+
+    //Enable Int on data read
+    heartrate10_A_FULL_EN(MAX86916_A_FULL_EN);
+    heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);
+    heartrate10_ALC_OVF_EN(MAX86916_ALC_OVF_DIS);
+    heartrate10_PROX_INT_EN(MAX86916_PROX_INT_DIS);
+    READ(HEARTRATE10_REG_INT_ENABLE, &buf_r);
+
+	READ(HEARTRATE10_REG_INT_STATUS, &buf_r);	//Clean interrupts
+
+    return HEARTRATE10_OK;
+}
+
 
 heartrate10_return_value_t heartrate10_shutdown_device(void)
 {
@@ -262,6 +334,42 @@ heartrate10_return_value_t heartrate10_led_range_4(MAX86916_LED_RANGE_TypeDef LE
     buf[0]=(LED_RANGE<<6)|(buf_r&0b00111111);
     SEND(HEARTRATE10_REG_LED_RANGE, buf);
     READ(HEARTRATE10_REG_LED_RANGE, &buf_r);
+
+	return HEARTRATE10_OK;
+}
+
+heartrate10_return_value_t heartrate10_led_power_1(uint8_t LED_PA_1)
+{
+    buf[0]=LED_PA_1;
+    SEND(HEARTRATE10_REG_LED1_PA, buf);
+    READ(HEARTRATE10_REG_LED1_PA, &buf_r);
+
+	return HEARTRATE10_OK;
+}
+
+heartrate10_return_value_t heartrate10_led_power_2(uint8_t LED_PA_2)
+{
+    buf[0]=LED_PA_2;
+    SEND(HEARTRATE10_REG_LED2_PA, buf);
+    READ(HEARTRATE10_REG_LED2_PA, &buf_r);
+
+	return HEARTRATE10_OK;
+}
+
+heartrate10_return_value_t heartrate10_led_power_3(uint8_t LED_PA_3)
+{
+    buf[0]=LED_PA_3;
+    SEND(HEARTRATE10_REG_LED3_PA, buf);
+    READ(HEARTRATE10_REG_LED3_PA, &buf_r);
+
+	return HEARTRATE10_OK;
+}
+
+heartrate10_return_value_t heartrate10_led_power_4(uint8_t LED_PA_4)
+{
+    buf[0]=LED_PA_4;
+    SEND(HEARTRATE10_REG_LED4_PA, buf);
+    READ(HEARTRATE10_REG_LED4_PA, &buf_r);
 
 	return HEARTRATE10_OK;
 }
@@ -414,7 +522,7 @@ uint8_t heartrate10_number_available_samples(void)
 	return nb_available_samples;
 }
 
-HAL_StatusTypeDef heartrate10_read_complete_fifo_data(data_TypeDef *pData)
+HAL_StatusTypeDef heartrate10_read_complete_fifo_data(data_4leds_TypeDef *pData)
 {
     uint8_t sample_parts[ 12 ] = { 0 };
     fifo_read = heartrate10_fifo_read(sample_parts, 12 );
@@ -426,6 +534,18 @@ HAL_StatusTypeDef heartrate10_read_complete_fifo_data(data_TypeDef *pData)
     pData->green &= 0x0007FFFF;
     pData->blue = sample_parts[ 11 ] | ( ( uint32_t )sample_parts[ 10 ] << 8 ) | ( ( uint32_t )sample_parts[ 9 ] << 16 );
     pData->blue &= 0x0007FFFF;
+
+    return fifo_read;
+}
+
+HAL_StatusTypeDef heartrate10_read_2leds_fifo_data(data_2leds_TypeDef *pData)
+{
+    uint8_t sample_parts[ 6 ] = { 0 };
+    fifo_read = heartrate10_fifo_read(sample_parts, 6 );
+    pData->ir = sample_parts[ 2 ] | ( ( uint32_t )sample_parts[ 1 ] << 8 ) | ( ( uint32_t )sample_parts[ 0 ] << 16 );
+    pData->ir &= 0x0007FFFF;
+    pData->red = sample_parts[ 5 ] | ( ( uint32_t )sample_parts[ 4 ] << 8 ) | ( ( uint32_t )sample_parts[ 3 ] << 16 );
+    pData->red &= 0x0007FFFF;
 
     return fifo_read;
 }

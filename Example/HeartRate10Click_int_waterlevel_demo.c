@@ -48,7 +48,7 @@ RTC_HandleTypeDef hrtc;
 PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
-data_TypeDef data;
+data_4leds_TypeDef data;
 uint8_t rd_dat = 0,number_available_samples = 0, i = 0;
 /* USER CODE END PV */
 
@@ -104,7 +104,7 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   heartrate10_return_value_t err_t;
-  err_t = heartrate10_default_cfg(hi2c2);
+  err_t = heartrate10_default_4leds_cfg(hi2c2);
   if (err_t!=0){
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
   }

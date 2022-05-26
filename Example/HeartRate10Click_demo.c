@@ -48,7 +48,8 @@ RTC_HandleTypeDef hrtc;
 PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
-data_TypeDef data;
+data_4leds_TypeDef data_4leds;
+data_2leds_TypeDef data_2leds;
 uint8_t rd_dat = 0,number_available_samples = 0;
 /* USER CODE END PV */
 
@@ -104,10 +105,15 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   heartrate10_return_value_t err_t;
-  err_t = heartrate10_default_cfg(hi2c2);
+  err_t = heartrate10_default_4leds_cfg(hi2c2);
   if (err_t!=0){
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
   }
+
+  //2 leds
+  heartrate10_set_mode(MAX86916_MODE_LED1_LED2);	//2 LEDs mode
+  heartrate10_led_power_3(0x00); //nominal current pulse amplitude of 0 mA for green LED
+  heartrate10_led_power_4(0x00); //nominal current pulse amplitude of 0 mA for blue LED
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -118,9 +124,14 @@ int main(void)
 	  number_available_samples=heartrate10_number_available_samples();
 	  if (rd_dat & 0x40)
 	  {
-		  heartrate10_read_complete_fifo_data(&data);
-		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data, 16, 1000);
+		  //4 leds
+//		  heartrate10_read_complete_fifo_data(&data_4leds);
+//		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_4leds, 16, 1000);
+		  //2 Leds
+		  heartrate10_read_2leds_fifo_data(&data_2leds);
+		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_2leds, 8, 1000);
 	  }
+
 	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7); // Toggle The Output (LED) Pin (Blue)
 	  HAL_Delay(3);
 

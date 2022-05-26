@@ -11,6 +11,7 @@
 
 //Includes
 #include "main.h"
+#include "arm_math.h"
 
 
 //Registers
@@ -202,7 +203,7 @@ typedef struct
 	uint32_t red;
 	uint32_t green;
 	uint32_t blue;
-} data_TypeDef;
+} data_4leds_TypeDef;
 
 typedef struct
 {
@@ -210,11 +211,30 @@ typedef struct
 	uint32_t filter_red;
 	uint32_t filter_green;
 	uint32_t filter_blue;
-} filter_data_TypeDef;
+} filter_data_4leds_TypeDef;
+
+typedef struct
+{
+	uint32_t ir;
+	uint32_t red;
+} data_2leds_TypeDef;
+
+typedef struct
+{
+	uint32_t filter_ir;
+	uint32_t filter_red;
+} filter_data_2leds_TypeDef;
+
+typedef struct
+{
+	float32_t filter_ir;
+	float32_t filter_red;
+} data_1s;
 
 
 //Functions
-heartrate10_return_value_t heartrate10_default_cfg(I2C_HandleTypeDef i2c);
+heartrate10_return_value_t heartrate10_default_4leds_cfg(I2C_HandleTypeDef i2c);
+heartrate10_return_value_t heartrate10_default_2leds_cfg(I2C_HandleTypeDef i2c);
 heartrate10_return_value_t heartrate10_shutdown_device(void);
 heartrate10_return_value_t heartrate10_reset_device(void);
 heartrate10_return_value_t heartrate10_set_mode(MAX86916_MODE_TypeDef MODE);
@@ -229,6 +249,10 @@ heartrate10_return_value_t heartrate10_led_range_1(MAX86916_LED_RANGE_TypeDef LE
 heartrate10_return_value_t heartrate10_led_range_2(MAX86916_LED_RANGE_TypeDef LED_RANGE);
 heartrate10_return_value_t heartrate10_led_range_3(MAX86916_LED_RANGE_TypeDef LED_RANGE);
 heartrate10_return_value_t heartrate10_led_range_4(MAX86916_LED_RANGE_TypeDef LED_RANGE);
+heartrate10_return_value_t heartrate10_led_power_1(uint8_t LED_PA_1);
+heartrate10_return_value_t heartrate10_led_power_2(uint8_t LED_PA_2);
+heartrate10_return_value_t heartrate10_led_power_3(uint8_t LED_PA_3);
+heartrate10_return_value_t heartrate10_led_power_4(uint8_t LED_PA_4);
 heartrate10_return_value_t heartrate10_FIFO_SAMPLE_AVERAGE(MAX86916_FIFO_SAMPLE_AVERAGE_TypeDef SMP_AVE);
 heartrate10_return_value_t heartrate10_FIFO_RO(MAX86916_FIFO_RO_TypeDef FIFO_RO_EN);
 heartrate10_return_value_t heartrate10_FIFO_A_FULL(MAX86916_FIFO_RO_TypeDef FIFO_A_FULL);
@@ -244,7 +268,8 @@ uint8_t heartrate10_get_int_pin (GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin_y);
 HAL_StatusTypeDef heartrate10_fifo_read(uint8_t *pData, uint8_t rx_len);
 uint32_t heartrate10_read_fifo_sample(void);
 uint8_t heartrate10_number_available_samples(void);
-HAL_StatusTypeDef heartrate10_read_complete_fifo_data(data_TypeDef *pData);
+HAL_StatusTypeDef heartrate10_read_complete_fifo_data(data_4leds_TypeDef *pData);
+HAL_StatusTypeDef heartrate10_read_2leds_fifo_data(data_2leds_TypeDef *pData);
 uint8_t led_enable(led_number_TypeDef number);
 HAL_StatusTypeDef READ(uint16_t Address, uint8_t *pData);
 HAL_StatusTypeDef SEND(uint16_t Address, uint8_t *pData);

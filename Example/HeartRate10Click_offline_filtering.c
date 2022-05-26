@@ -85,8 +85,8 @@ static void MX_RTC_Init(void);
 //Filter buffer
 static float32_t testOutput_ir[LENGTH_DATA]={0};
 
-static float32_t firStateF32[2*NUMBER_STAGE]={0};
-const float32_t firCoeffs32[NUMBER_COEFS] =
+static float32_t iirStateF32_ir[2*NUMBER_STAGE]={0};
+const float32_t iirCoeffs32[NUMBER_COEFS] =
 {
 		0.1245,         0,   -0.1245,    1.7492,    -0.7509 //b0 b1 b2 a1 a2 -->Matlab coefficient with erasing a0 which is 1 and inverted the a signs
 };
@@ -128,7 +128,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   //Sensor init
   heartrate10_return_value_t err_t;
-  err_t = heartrate10_default_cfg(hi2c2);
+  err_t = heartrate10_default_4leds_cfg(hi2c2);
   if (err_t!=0){
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
   }
@@ -139,7 +139,7 @@ int main(void)
   //Filter variables
   inputF32_ir = &block_data_ir[0]; //Initialize input buffer pointers
   outputF32_ir = &testOutput_ir[0]; //Initialize output buffer pointers
-  arm_biquad_cascade_df2T_init_f32(&S,(uint8_t)NUMBER_STAGE,(const float32_t *)&firCoeffs32[0], (float32_t *)&firStateF32[0]);
+  arm_biquad_cascade_df2T_init_f32(&S,(uint8_t)NUMBER_STAGE,(const float32_t *)&iirCoeffs32[0], (float32_t *)&iirStateF32_ir[0]);
 
   HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7); // Toggle The Output (LED) Pin (Blue) to see the main
   HAL_Delay(2000);

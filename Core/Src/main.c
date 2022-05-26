@@ -33,10 +33,10 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 //Filter PD
-#define BLOCK_SIZE            		20
 #define NUMBER_COEFS              	5
 #define NUMBER_STAGE              	1
-#define LENGTH_DATA 				600
+#define BLOCK_SIZE            		20
+#define LENGTH_DATA 				200
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -54,17 +54,20 @@ RTC_HandleTypeDef hrtc;
 PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
-data_TypeDef data;
-uint8_t rd_dat = 0,number_available_samples = 0, i = 0, flag_filter = 0;
+data_2leds_TypeDef data;
+uint8_t rd_dat = 0, number_available_samples = 0, i = 0, flag_filter = 0;
 static uint8_t j = 0;
 
 //Filter PV
 float32_t block_data_ir[LENGTH_DATA];
+float32_t block_data_red[LENGTH_DATA];
 uint32_t block_size = BLOCK_SIZE;
-uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;
-uint32_t m;
-arm_biquad_cascade_df2T_instance_f32 S;
-float32_t  *inputF32_ir, *outputF32_ir;
+uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;							//number of repetition in order to have every samples
+arm_biquad_cascade_df2T_instance_f32 S_ir, S_red;						//pointers to the instance of the filter data structure which contains the number of stage, the pointer to the buffer of coefficients and the pointer to the buffer with states
+float32_t  *inputF32_ir,*inputF32_red, *outputF32_ir, *outputF32_red; 	//pointers to data buffers
+
+//10 seconds buffer
+data_1s data_10s[10*LENGTH_DATA];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,10 +85,12 @@ static void MX_RTC_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 //Filter buffer
-static float32_t testOutput_ir[LENGTH_DATA]={0};
+static float32_t output_ir[LENGTH_DATA]={0};
+static float32_t output_red[LENGTH_DATA]={0};
 
-static float32_t firStateF32[2*NUMBER_STAGE]={0};
-const float32_t firCoeffs32[NUMBER_COEFS] =
+static float32_t iirStateF32_ir[2*NUMBER_STAGE]={0};
+static float32_t iirStateF32_red[2*NUMBER_STAGE]={0};
+const float32_t iirCoeffs32[NUMBER_COEFS] =
 {
 		0.1245,         0,   -0.1245,    1.7492,    -0.7509 //b0 b1 b2 a1 a2 -->Matlab coefficient with erasing a0 which is 1 and inverted the a signs
 };
@@ -126,18 +131,18 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   heartrate10_return_value_t err_t;
-  err_t = heartrate10_default_cfg(hi2c2);
+  err_t = heartrate10_default_2leds_cfg(hi2c2);
   if (err_t!=0){
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
   }
 
-  heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);		//Disable interruption when a new sample is in FIFO
-  heartrate10_A_FULL_EN(MAX86916_A_FULL_EN);		//Enable interruption when the number of data in FIFO reach the waterlevel (initialize by default at 20 samples)
-
   //Filter variables
-  inputF32_ir = &block_data_ir[0]; //Initialize input buffer pointers
-  outputF32_ir = &testOutput_ir[0]; //Initialize output buffer pointers
-  arm_biquad_cascade_df2T_init_f32(&S,(uint8_t)NUMBER_STAGE,(const float32_t *)&firCoeffs32[0], (float32_t *)&firStateF32[0]);
+  inputF32_ir = &block_data_ir[0]; 					//Initialize input buffer pointers
+  outputF32_ir = &output_ir[0]; 					//Initialize output buffer pointers
+  inputF32_red = &block_data_red[0]; 				//Initialize input buffer pointers
+  outputF32_red = &output_red[0]; 					//Initialize output buffer pointers
+  arm_biquad_cascade_df2T_init_f32(&S_ir,(uint8_t)NUMBER_STAGE,(const float32_t *)&iirCoeffs32[0], (float32_t *)&iirStateF32_ir[0]);
+  arm_biquad_cascade_df2T_init_f32(&S_red,(uint8_t)NUMBER_STAGE,(const float32_t *)&iirCoeffs32[0], (float32_t *)&iirStateF32_red[0]);
 
   /* USER CODE END 2 */
 
@@ -147,12 +152,14 @@ int main(void)
   {
 	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET); // Set the Output (LED) Pin (Red) high to see the interrupt
 	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+
 	  if (flag_filter == 1)
 	  {
 		  IIR_filter();
 		  j = 0;
 		  flag_filter = 0;
 	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -486,10 +493,12 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 			//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&number_available_samples, 1, 1000);
 			for(i=0;i<block_size;i++)
 			{
-				heartrate10_read_complete_fifo_data(&data);
-				//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data, 16, 1000);
+				heartrate10_read_2leds_fifo_data(&data);
+				//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data, 8, 1000);
 				block_data_ir[i+j*block_size]=(float32_t)data.ir;
 				//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&block_data_ir[i+j*block_size], 4, 1000);
+				block_data_red[i+j*block_size]=(float32_t)data.red;
+				//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&block_data_red[i+j*block_size], 4, 1000);
 			}
 			//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&j, 1, 1000);
 			j++;
@@ -502,8 +511,12 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 
 void IIR_filter(void)
 {
-	arm_biquad_cascade_df2T_f32(&S, inputF32_ir, outputF32_ir, LENGTH_DATA);
-	HAL_UART_Transmit(&hlpuart1, (uint8_t*)testOutput_ir, (uint16_t)4*LENGTH_DATA, 1000);
+	arm_biquad_cascade_df2T_f32(&S_ir, inputF32_ir, outputF32_ir, LENGTH_DATA);
+	arm_biquad_cascade_df2T_f32(&S_red, inputF32_red, outputF32_red, LENGTH_DATA);
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)block_data_ir, (uint16_t)4*LENGTH_DATA, 1000);
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)block_data_red, (uint16_t)4*LENGTH_DATA, 1000);
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)output_ir, (uint16_t)4*LENGTH_DATA, 1000);
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)output_red, (uint16_t)4*LENGTH_DATA, 1000);
 }
 /* USER CODE END 4 */
 
