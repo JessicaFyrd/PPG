@@ -184,8 +184,8 @@ heartrate10_return_value_t heartrate10_default_2leds_cfg(I2C_HandleTypeDef i2c)
     heartrate10_FIFO_A_FULL(MAX86916_FIFO_A_FULL_20);
 
     //Enable Int on data read
-    heartrate10_A_FULL_EN(MAX86916_A_FULL_EN);
-    heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);
+    heartrate10_A_FULL_EN(MAX86916_A_FULL_DIS);
+    heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_EN);
     heartrate10_ALC_OVF_EN(MAX86916_ALC_OVF_DIS);
     heartrate10_PROX_INT_EN(MAX86916_PROX_INT_DIS);
     READ(HEARTRATE10_REG_INT_ENABLE, &buf_r);

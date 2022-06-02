@@ -48,7 +48,7 @@ RTC_HandleTypeDef hrtc;
 PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
-data_4leds_TypeDef data;
+data_4leds_TypeDef data;									//Data which contains 4 uint32 variables, one for each led
 uint8_t rd_dat = 0,number_available_samples = 0, i = 0;
 /* USER CODE END PV */
 
@@ -104,7 +104,7 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   heartrate10_return_value_t err_t;
-  err_t = heartrate10_default_4leds_cfg(hi2c2);
+  err_t = heartrate10_default_4leds_cfg(hi2c2);						//4 leds init
   if (err_t!=0){
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
   }
@@ -441,11 +441,13 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
-	if(GPIO_Pin == GPIO_PIN_3) // If The INT Source Is EXTI Line3
+	if(GPIO_Pin == GPIO_PIN_3) 														// If The INT Source Is EXTI Line3
 	{
-	    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9); // Toggle The Output (LED) Pin (Red) to see the interrupt
+	    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9); 										// Toggle The Output (LED) Pin (Red) to see the interrupt
 		number_available_samples=heartrate10_number_available_samples();
-		//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&number_available_samples, 1, 1000);
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&number_available_samples, 1, 1000);
+
+		//Read all the available data in FIFO and transmit it in UART
 		for(i=0;i<number_available_samples;i++)
 		{
 			heartrate10_read_complete_fifo_data(&data);

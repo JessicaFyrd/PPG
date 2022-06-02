@@ -48,8 +48,8 @@ RTC_HandleTypeDef hrtc;
 PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
-data_4leds_TypeDef data_4leds;
-data_2leds_TypeDef data_2leds;
+data_4leds_TypeDef data_4leds;						//Data which contains 4 uint32 variables, one for each led
+data_2leds_TypeDef data_2leds;						//Data which contains 2 uint32 variables, one for each led
 uint8_t rd_dat = 0,number_available_samples = 0;
 /* USER CODE END PV */
 
@@ -105,15 +105,17 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   heartrate10_return_value_t err_t;
-  err_t = heartrate10_default_4leds_cfg(hi2c2);
+
+  //4 leds init
+//  err_t = heartrate10_default_4leds_cfg(hi2c2);
+  //2 leds init
+  err_t = heartrate10_default_2leds_cfg(hi2c2);
+
   if (err_t!=0){
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
   }
 
-  //2 leds
-  heartrate10_set_mode(MAX86916_MODE_LED1_LED2);	//2 LEDs mode
-  heartrate10_led_power_3(0x00); //nominal current pulse amplitude of 0 mA for green LED
-  heartrate10_led_power_4(0x00); //nominal current pulse amplitude of 0 mA for blue LED
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -124,10 +126,10 @@ int main(void)
 	  number_available_samples=heartrate10_number_available_samples();
 	  if (rd_dat & 0x40)
 	  {
-		  //4 leds
+		  //4 leds read and transmit data via UART
 //		  heartrate10_read_complete_fifo_data(&data_4leds);
 //		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_4leds, 16, 1000);
-		  //2 Leds
+		  //2 Leds read and transmit data via UART
 		  heartrate10_read_2leds_fifo_data(&data_2leds);
 		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_2leds, 8, 1000);
 	  }
@@ -459,9 +461,9 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
 {
-	if(GPIO_Pin == GPIO_PIN_3) // If The INT Source Is EXTI Line3
+	if(GPIO_Pin == GPIO_PIN_3) 					// If The INT Source Is EXTI Line3
 	{
-	    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9); // Toggle The Output (LED) Pin (Red)
+	    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9); 	// Toggle The Output (LED) Pin (Red)
 	}
 }
 /* USER CODE END 4 */

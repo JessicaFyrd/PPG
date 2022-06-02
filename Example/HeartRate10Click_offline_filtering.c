@@ -56,16 +56,16 @@ PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
 //Data acquisition PV
-extern float32_t data_ir[LENGTH_WHOLE_DATA];
-float32_t block_data_ir[LENGTH_DATA];
+extern float32_t data_ir[LENGTH_WHOLE_DATA];		//All the offline data stocked in an other .c
+float32_t block_data_ir[LENGTH_DATA];				//Buffer which simulate the buffer on which the data will be stocked in the online mode
 uint8_t rd_dat = 0;
 
 //Filter PV
 uint32_t block_size = BLOCK_SIZE;
-uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;
+uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;		//Number of blocks to have all the samples in block_data_ir when filtering BLOCK_SIZE samples at a time
 uint32_t m;
-arm_biquad_cascade_df2T_instance_f32 S;
-float32_t  *inputF32_ir, *outputF32_ir;
+arm_biquad_cascade_df2T_instance_f32 S;				//Type that contains the number of stages, a pointer to the buffer with coefficients and a pointer to the state
+float32_t  *inputF32_ir, *outputF32_ir;				//Pointers to input and output buffers
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,11 +82,10 @@ static void MX_RTC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-//Filter buffer
-static float32_t testOutput_ir[LENGTH_DATA]={0};
+static float32_t testOutput_ir[LENGTH_DATA]={0};			//Filter data buffer
 
-static float32_t iirStateF32_ir[2*NUMBER_STAGE]={0};
-const float32_t iirCoeffs32[NUMBER_COEFS] =
+static float32_t iirStateF32_ir[2*NUMBER_STAGE]={0};		//State buffer
+const float32_t iirCoeffs32[NUMBER_COEFS] =					//Coefficients buffer
 {
 		0.1245,         0,   -0.1245,    1.7492,    -0.7509 //b0 b1 b2 a1 a2 -->Matlab coefficient with erasing a0 which is 1 and inverted the a signs
 };
@@ -128,68 +127,68 @@ int main(void)
   /* USER CODE BEGIN 2 */
   //Sensor init
   heartrate10_return_value_t err_t;
-  err_t = heartrate10_default_4leds_cfg(hi2c2);
+  err_t = heartrate10_default_4leds_cfg(hi2c2);						//4 LEDS init
   if (err_t!=0){
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
   }
 
   //Sensor changes
-  heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);		//Disable interruption when a new sample is in FIFO
+  heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);						//Disable interruption when a new sample is in FIFO
 
   //Filter variables
-  inputF32_ir = &block_data_ir[0]; //Initialize input buffer pointers
-  outputF32_ir = &testOutput_ir[0]; //Initialize output buffer pointers
-  arm_biquad_cascade_df2T_init_f32(&S,(uint8_t)NUMBER_STAGE,(const float32_t *)&iirCoeffs32[0], (float32_t *)&iirStateF32_ir[0]);
+  inputF32_ir = &block_data_ir[0]; 																									//Initialize input buffer pointers
+  outputF32_ir = &testOutput_ir[0]; 																								//Initialize output buffer pointers
+  arm_biquad_cascade_df2T_init_f32(&S,(uint8_t)NUMBER_STAGE,(const float32_t *)&iirCoeffs32[0], (float32_t *)&iirStateF32_ir[0]); 	//Initialize filter
 
   HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7); // Toggle The Output (LED) Pin (Blue) to see the main
   HAL_Delay(2000);
   HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7); // Toggle The Output (LED) Pin (Blue) to see the main
   HAL_Delay(2000);
 
-  //Divide samples by blocks
+  //Divide samples by blocks to simulate the buffer which will stock the online data
   for (m=0;m<LENGTH_DATA;m++)
   {
 	  block_data_ir[m]=data_ir[m];
   }
 
-  //Filter 1 samples
+  //Filter 1st block of samples
   IIR_filter();
 
-  //Divide samples by blocks
+  //Divide samples by blocks to simulate the buffer which will stock the online data
   for (m=0;m<LENGTH_DATA;m++)
   {
 	  block_data_ir[m]=data_ir[m+LENGTH_DATA];
   }
 
-  //Filter 2 samples
+  //Filter 2nd block of samples
+  IIR_filter();
+
+  //Divide samples by blocks to simulate the buffer which will stock the online data
+  for (m=0;m<LENGTH_DATA;m++)
+  {
+	  block_data_ir[m]=data_ir[m+2*LENGTH_DATA];
+  }
+
+  //Filter 3th block of samples
   IIR_filter();
 
   //Divide samples by blocks
-for (m=0;m<LENGTH_DATA;m++)
-{
-  block_data_ir[m]=data_ir[m+2*LENGTH_DATA];
-}
-
-//Filter 3 samples
-IIR_filter();
-
-//Divide samples by blocks
   for (m=0;m<LENGTH_DATA;m++)
   {
 	  block_data_ir[m]=data_ir[m+3*LENGTH_DATA];
   }
 
-  //Filter 4 samples
+  //Filter 4th block of samples
   IIR_filter();
 
   //Divide samples by blocks
-    for (m=0;m<LENGTH_DATA;m++)
-    {
-  	  block_data_ir[m]=data_ir[m+4*LENGTH_DATA];
-    }
+  for (m=0;m<LENGTH_DATA;m++)
+  {
+	  block_data_ir[m]=data_ir[m+4*LENGTH_DATA];
+  }
 
-    //Filter 5 samples
-    IIR_filter();
+  //Filter 5th block of samples
+  IIR_filter();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -522,19 +521,22 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
-	if(GPIO_Pin == GPIO_PIN_3) // If The INT Source Is EXTI Line3
+	if(GPIO_Pin == GPIO_PIN_3) 						// If The INT Source Is EXTI Line3
 	{
-	    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9); // Toggle The Output (LED) Pin (Red) to see the interrupt
+	    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9); 		// Toggle The Output (LED) Pin (Red) to see the interrupt
 	}
 }
 
 void IIR_filter(void)
 {
+	//Filter data by blocks of block_size
 	for(m = 0; m < numBlocks; m++)
 	{
 		  arm_biquad_cascade_df2T_f32(&S, inputF32_ir+(m*block_size), outputF32_ir+(m*block_size), block_size);
 		  //HAL_UART_Transmit(&hlpuart1, (uint8_t*)&testOutput_ir[m], 4*block_size, 1000);
 	}
+
+	//Transmit filtered data via UART
 	for(m = 0; m < LENGTH_DATA; m++)
 	{
 		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&testOutput_ir[m], (uint16_t)4, 1000);
