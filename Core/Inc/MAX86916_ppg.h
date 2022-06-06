@@ -227,6 +227,8 @@ typedef struct
 
 typedef struct
 {
+	uint32_t ir;
+	uint32_t red;
 	float32_t filter_ir;
 	float32_t filter_red;
 } data_1s;

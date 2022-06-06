@@ -60,7 +60,6 @@ void Error_Handler(void);
 #define INTB_Pin GPIO_PIN_3
 #define INTB_GPIO_Port GPIOF
 #define INTB_EXTI_IRQn EXTI3_IRQn
-void IIR_filter(void);
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
