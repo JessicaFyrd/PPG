@@ -72,7 +72,6 @@ uint32_t i;
 arm_biquad_cascade_df2T_instance_f32 S;				//Type that contains the number of stages, a pointer to the buffer with coefficients and a pointer to the state
 float32_t  *inputF32_ir, *outputF32_ir;				//Pointers to input and output buffers
 
-
 //Heart Rate calculation PV
 uint64_t max_y = 0; 								//In Matlab, the max is about 4,5.10^9 so 32 bits is too short
 uint16_t max_x = 0;									//The max is the number of points, 2000 here so 16 bits is enough

@@ -225,15 +225,6 @@ typedef struct
 	uint32_t filter_red;
 } filter_data_2leds_TypeDef;
 
-typedef struct
-{
-	uint32_t ir;
-	uint32_t red;
-	float32_t filter_ir;
-	float32_t filter_red;
-} data_1s;
-
-
 //Functions
 heartrate10_return_value_t heartrate10_default_4leds_cfg(I2C_HandleTypeDef i2c);
 heartrate10_return_value_t heartrate10_default_2leds_cfg(I2C_HandleTypeDef i2c);
