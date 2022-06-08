@@ -195,7 +195,6 @@ heartrate10_return_value_t heartrate10_default_2leds_cfg(I2C_HandleTypeDef i2c)
     return HEARTRATE10_OK;
 }
 
-
 heartrate10_return_value_t heartrate10_shutdown_device(void)
 {
 	buf[0]=0x80; //0b1000 0000
