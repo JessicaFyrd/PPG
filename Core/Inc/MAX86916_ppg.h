@@ -9,12 +9,12 @@
 #define INC_MAX86916_PPG_H_
 
 
-//Includes
+//Includes ===========================================================================================================================================
 #include "main.h"
 #include "arm_math.h"
 
 
-//Registers
+//Registers  =========================================================================================================================================
 #define HEARTRATE10_REG_INT_STATUS              0x00
 #define HEARTRATE10_REG_INT_ENABLE              0x02
 #define HEARTRATE10_REG_FIFO_WR_PTR             0x04
@@ -43,17 +43,17 @@
 #define HEARTRATE10_REG_PART_ID                 0xFF
 
 
-//Sensor ID
+//Sensor ID  =========================================================================================================================================
 #define HEARTRATE10_PART_ID                     0x2B
 
 
-//Sensor address
+//Sensor addresses  ==================================================================================================================================
 #define HEARTRATE10_SET_DEV_ADDR                0x57
 #define HEARTRATE10_SET_DEV_ADDR_W              0xAE
 #define HEARTRATE10_SET_DEV_ADDR_R              0xAF
 
 
-//Enumeration types
+//Enumeration types  =================================================================================================================================
 	//Heart rate return
 typedef enum
 {
@@ -162,7 +162,7 @@ typedef enum
 	MAX86916_LED_PW_420 = 0b11,
 } MAX86916_LED_PW_TypeDef;
 
-//LED Range (0x11)
+	//LED Range (0x11)
 typedef enum
 {
 	MAX86916_LED_RANGE_50 = 0b00,
@@ -171,7 +171,7 @@ typedef enum
 	MAX86916_LED_RANGE_200 = 0b11,
 } MAX86916_LED_RANGE_TypeDef;
 
-//LED Sequence (0x13 and 0x14)
+	//LED Sequence (0x13 and 0x14)
 typedef enum
 {
 	MAX86916_LED_SEQ_OFF = 0b0000,
@@ -185,18 +185,8 @@ typedef enum
 	MAX86916_LED_SEQ_PILOT_LED4 = 0b1000,
 } MAX86916_LED_SEQ_PILOT_TypeDef;
 
-//Led comp
-typedef enum
-{
-	LED1 = 0b00010001,
-	LED2 = 0b00100001,
-	LED3 = 0b01000001,
-	LED4 = 0b10000001,
-	COMP_OFF = 0b00000000,
-} led_number_TypeDef;
 
-
-//Structures
+//Structures  ========================================================================================================================================
 typedef struct
 {
 	uint32_t ir;
@@ -225,27 +215,28 @@ typedef struct
 	uint32_t filter_red;
 } filter_data_2leds_TypeDef;
 
-//Functions
-heartrate10_return_value_t heartrate10_default_4leds_cfg(I2C_HandleTypeDef i2c);
-heartrate10_return_value_t heartrate10_default_2leds_cfg(I2C_HandleTypeDef i2c);
-heartrate10_return_value_t heartrate10_shutdown_device(void);
-heartrate10_return_value_t heartrate10_reset_device(void);
-heartrate10_return_value_t heartrate10_set_mode(MAX86916_MODE_TypeDef MODE);
-heartrate10_return_value_t heartrate10_set_led_sequence_1(MAX86916_LED_SEQ_PILOT_TypeDef SEQ);
-heartrate10_return_value_t heartrate10_set_led_sequence_2(MAX86916_LED_SEQ_PILOT_TypeDef SEQ);
-heartrate10_return_value_t heartrate10_set_led_sequence_3(MAX86916_LED_SEQ_PILOT_TypeDef SEQ);
-heartrate10_return_value_t heartrate10_set_led_sequence_4(MAX86916_LED_SEQ_PILOT_TypeDef SEQ);
-heartrate10_return_value_t heartrate10_adc_range(MAX86916_ADC_range_TypeDef ADC_RANGE);
-heartrate10_return_value_t heartrate10_sr(MAX86916_SR_TypeDef SR);
-heartrate10_return_value_t heartrate10_led_pulse_width(MAX86916_LED_PW_TypeDef LED_PW);
-heartrate10_return_value_t heartrate10_led_range_1(MAX86916_LED_RANGE_TypeDef LED_RANGE);
-heartrate10_return_value_t heartrate10_led_range_2(MAX86916_LED_RANGE_TypeDef LED_RANGE);
-heartrate10_return_value_t heartrate10_led_range_3(MAX86916_LED_RANGE_TypeDef LED_RANGE);
-heartrate10_return_value_t heartrate10_led_range_4(MAX86916_LED_RANGE_TypeDef LED_RANGE);
-heartrate10_return_value_t heartrate10_led_power_1(uint8_t LED_PA_1);
-heartrate10_return_value_t heartrate10_led_power_2(uint8_t LED_PA_2);
-heartrate10_return_value_t heartrate10_led_power_3(uint8_t LED_PA_3);
-heartrate10_return_value_t heartrate10_led_power_4(uint8_t LED_PA_4);
+
+//Functions  =========================================================================================================================================
+heartrate10_return_value_t HEARTRATE10_DEFAULT_4LEDS_CFG(I2C_HandleTypeDef i2c);
+heartrate10_return_value_t HEARTRATE10_DEFAULT_2LEDS_CFG(I2C_HandleTypeDef i2c);
+heartrate10_return_value_t HEARTRATE10_SHUTDOWN_DEVICE(void);
+heartrate10_return_value_t HEARTRATE10_RESET_DEVICE(void);
+heartrate10_return_value_t HEARTRATE10_SET_MODE(MAX86916_MODE_TypeDef MODE);
+heartrate10_return_value_t HEARTRATE10_SET_LED_SEQUENCE_1(MAX86916_LED_SEQ_PILOT_TypeDef SEQ);
+heartrate10_return_value_t HEARTRATE10_SET_LED_SEQUENCE_2(MAX86916_LED_SEQ_PILOT_TypeDef SEQ);
+heartrate10_return_value_t HEARTRATE10_SET_LED_SEQUENCE_3(MAX86916_LED_SEQ_PILOT_TypeDef SEQ);
+heartrate10_return_value_t HEARTRATE10_SET_LED_SEQUENCE_4(MAX86916_LED_SEQ_PILOT_TypeDef SEQ);
+heartrate10_return_value_t HEARTRATE10_ADC_RANGE(MAX86916_ADC_range_TypeDef ADC_RANGE);
+heartrate10_return_value_t HEARTRATE10_SR(MAX86916_SR_TypeDef SR);
+heartrate10_return_value_t HEARTRATE10_LED_PULSE_WIDTH(MAX86916_LED_PW_TypeDef LED_PW);
+heartrate10_return_value_t HEARTRATE10_LED_RANGE_1(MAX86916_LED_RANGE_TypeDef LED_RANGE);
+heartrate10_return_value_t HEARTRATE10_LED_RANGE_2(MAX86916_LED_RANGE_TypeDef LED_RANGE);
+heartrate10_return_value_t HEARTRATE10_LED_RANGE_3(MAX86916_LED_RANGE_TypeDef LED_RANGE);
+heartrate10_return_value_t HEARTRATE10_LED_RANGE_4(MAX86916_LED_RANGE_TypeDef LED_RANGE);
+heartrate10_return_value_t HEARTRATE10_LED_POWER_1(uint8_t LED_PA_1);
+heartrate10_return_value_t HEARTRATE10_LED_POWER_2(uint8_t LED_PA_2);
+heartrate10_return_value_t HEARTRATE10_LED_POWER_3(uint8_t LED_PA_3);
+heartrate10_return_value_t HEARTRATE10_LED_POWER_4(uint8_t LED_PA_4);
 heartrate10_return_value_t heartrate10_FIFO_SAMPLE_AVERAGE(MAX86916_FIFO_SAMPLE_AVERAGE_TypeDef SMP_AVE);
 heartrate10_return_value_t heartrate10_FIFO_RO(MAX86916_FIFO_RO_TypeDef FIFO_RO_EN);
 heartrate10_return_value_t heartrate10_FIFO_A_FULL(MAX86916_FIFO_RO_TypeDef FIFO_A_FULL);
@@ -253,17 +244,11 @@ heartrate10_return_value_t heartrate10_A_FULL_EN(MAX86916_A_FULL_EN_TypeDef A_FU
 heartrate10_return_value_t heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_EN_TypeDef SMP_RDY_EN);
 heartrate10_return_value_t heartrate10_ALC_OVF_EN(MAX86916_ALC_OVF_EN_TypeDef ALC_OVF_EN);
 heartrate10_return_value_t heartrate10_PROX_INT_EN(MAX86916_PROX_INT_EN_TypeDef PROX_INT_EN);
-heartrate10_return_value_t heartrate10_PROX_INT_THRESHOLD(uint8_t PROX_INT_THRESHOLD);
-uint8_t heartrate10_READ_RD_PTR(void);
-uint8_t heartrate10_READ_WR_PTR(void);
-heartrate10_return_value_t heartrate10_WRITE_RD_PTR(uint8_t RD_POINTER);
-uint8_t heartrate10_get_int_pin (GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin_y);
-HAL_StatusTypeDef heartrate10_fifo_read(uint8_t *pData, uint8_t rx_len);
-uint32_t heartrate10_read_fifo_sample(void);
-uint8_t heartrate10_number_available_samples(void);
-HAL_StatusTypeDef heartrate10_read_complete_fifo_data(data_4leds_TypeDef *pData);
-HAL_StatusTypeDef heartrate10_read_2leds_fifo_data(data_2leds_TypeDef *pData);
-uint8_t led_enable(led_number_TypeDef number);
+HAL_StatusTypeDef HEARTRATE10_FIFO_READ(uint8_t *pData, uint8_t RX_LEN);
+uint32_t HEARTRATE10_READ_FIFO_SAMPLE(void);
+uint8_t HEARTRATE10_NUMBER_AVAILABLE_SAMPLES(void);
+HAL_StatusTypeDef HEARTRATE10_READ_COMPLETE_FIFO_DATA(data_4leds_TypeDef *pData);
+HAL_StatusTypeDef HEARTRATE10_READ_2LEDS_FIFO_DATA(data_2leds_TypeDef *pData);
 HAL_StatusTypeDef READ(uint16_t Address, uint8_t *pData);
 HAL_StatusTypeDef SEND(uint16_t Address, uint8_t *pData);
 

@@ -17,13 +17,12 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <DSP.h>
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "MAX86916_ppg.h"
-#include "arm_math.h"
-#include "string.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,15 +32,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-//Filter PD
-#define NUMBER_COEFS              	5
-#define NUMBER_STAGE              	1
-#define BLOCK_SIZE            		20				//Must be the same as the watermark level for interruption
-#define LENGTH_DATA 				200				//Must be equal to the sample rate/number of samples for average to obtain 1 seconde of data
-#define LENGTH_DATA_10s 			10*LENGTH_DATA
 
-//Heart Rate calculation
-#define SHIFT 20
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -63,24 +54,22 @@ PCD_HandleTypeDef hpcd_USB_FS;
 data_2leds_TypeDef data;														//Data which contains 2 uint32 variables, one for each led
 uint8_t rd_dat = 0, number_available_samples = 0;
 uint16_t i = 0;
-static uint8_t j = 0;
+uint8_t j = 0;
 
 //Filter PV
 uint8_t flag_filter = 0;
 uint32_t block_size = BLOCK_SIZE;
-uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;									//Number of blocks to have all the samples in block_data_ir when filtering BLOCK_SIZE samples at a time
-float32_t block_data_ir[LENGTH_DATA] = {0};										//Online data buffer for IR LED
-float32_t block_data_red[LENGTH_DATA] = {0};									//Online data buffer for red LED
-float32_t data_10s_ir[LENGTH_DATA_10s] = {0};									//10 seconds IR buffer
-float32_t data_10s_red[LENGTH_DATA_10s] = {0};									//10 seconds red buffer
-float32_t  *inputF32_ir,*inputF32_red, *outputF32_ir, *outputF32_red; 			//Pointers to input and output buffers
-arm_biquad_cascade_df2T_instance_f32 S_ir, S_red;								//Type that contains the number of stages, a pointer to the buffer with coefficients and a pointer to the state
+uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;			//Number of blocks to have all the samples in data_1s_ir when filtering BLOCK_SIZE samples at a time
+extern float32_t data_1s_ir[LENGTH_DATA];				//1 second IR buffer
+extern float32_t data_1s_red[LENGTH_DATA];				//1 second red buffer
+extern float32_t data_1s_ir_filtered[LENGTH_DATA];		//Filter IR data buffer
+extern float32_t data_1s_red_filtered[LENGTH_DATA];		//Filter red data buffer
+extern float32_t data_10s_ir[LENGTH_DATA_10s];			//10 seconds IR buffer
+extern float32_t data_10s_red[LENGTH_DATA_10s];			//10 seconds red buffer
 
 //Heart Rate calculation PV
-uint64_t max_y = 0; 								//In Matlab, the max is about 4,5.10^9 so 32 bits is too short
-uint16_t max_x = 0;									//The max is the number of points, 2000 here so 16 bits is enough
-float32_t Heart_Rate = 0;
-float32_t auto_corr[2*LENGTH_DATA_10s-1] = {0};
+float32_t HR = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,16 +86,7 @@ static void MX_RTC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-//Filter buffer
-static float32_t output_ir[LENGTH_DATA] = {0};					//Filter IR data buffer
-static float32_t output_red[LENGTH_DATA] = {0};					//Filter red data buffer
 
-static float32_t iirStateF32_ir[2*NUMBER_STAGE] = {0};			//State IR buffer
-static float32_t iirStateF32_red[2*NUMBER_STAGE] = {0};			//State red buffer
-const float32_t iirCoeffs32[NUMBER_COEFS] =						//Coefficients buffer
-{
-		0.1245,         0,   -0.1245,    1.7492,    -0.7509 	//b0 b1 b2 a1 a2 -->Matlab coefficient with erasing a0 which is 1 and inverted the a signs
-};
 /* USER CODE END 0 */
 
 /**
@@ -143,24 +123,16 @@ int main(void)
   MX_ICACHE_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
-  //Filter variables
-  inputF32_ir = &block_data_ir[0]; 								//Initialize input IR buffer pointers
-  outputF32_ir = &output_ir[0]; 								//Initialize output IR buffer pointers
-  inputF32_red = &block_data_red[0]; 							//Initialize input red buffer pointers
-  outputF32_red = &output_red[0]; 								//Initialize output red buffer pointers
-  arm_biquad_cascade_df2T_init_f32(&S_ir,(uint8_t)NUMBER_STAGE,(const float32_t *)&iirCoeffs32[0], (float32_t *)&iirStateF32_ir[0]); 	//Initialize IR filter
-  arm_biquad_cascade_df2T_init_f32(&S_red,(uint8_t)NUMBER_STAGE,(const float32_t *)&iirCoeffs32[0], (float32_t *)&iirStateF32_red[0]);	//Initialize red filter
+  DSP_INIT();
 
   //Config
   heartrate10_return_value_t err_t;
-  err_t = heartrate10_default_2leds_cfg(hi2c2);					//2 LEDS init
+  err_t = HEARTRATE10_DEFAULT_2LEDS_CFG(hi2c2);
   if (err_t!=0)
   {
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
   }
-  heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);					//Disable interruption when a new sample is in FIFO
-  heartrate10_A_FULL_EN(MAX86916_A_FULL_EN);					//Enable interruption when a watermark level of samples is in FIFO
-  READ(HEARTRATE10_REG_INT_STATUS, &rd_dat);					//Clean interrupts
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -174,49 +146,8 @@ int main(void)
 	  //Filtration that happen when the define number of samples has been reached (=> flag_filter = 1)
 	  if (flag_filter == 1)
 	  {
-		  //Shift a LENGTH_DATA size block to the left (erasing the 1st second of data)
-//		  for (i=0;i<9*LENGTH_DATA;i++)
-//		  {
-//			  data_10s_ir[i]=data_10s_ir[i+LENGTH_DATA];
-//			  data_10s_red[i]=data_10s_red[i+LENGTH_DATA];
-//		  }
-		  memcpy(&data_10s_ir[0],&data_10s_ir[LENGTH_DATA],9*LENGTH_DATA*4); //Memory copy in the 1st argument from the second with the size in 3rd argument (in bytes)
-
-		  //Filter
-		  IIR_filter();
-
-		  //Add a LENGTH_DATA size block on the right (add a new second of data)
-//		  for (i=0;i<LENGTH_DATA;i++)
-//		  {
-//			  data_10s_ir[i+9*LENGTH_DATA]=output_ir[i];
-//			  data_10s_red[i+9*LENGTH_DATA]=output_red[i];
-//		  }
-		  memcpy(&data_10s_ir[9*LENGTH_DATA],output_ir,LENGTH_DATA*4);
-
-//		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_10s_ir[9*LENGTH_DATA], (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);
-//		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_10s_ir, (uint16_t)4*LENGTH_DATA_10s, HAL_MAX_DELAY);
-
-		  //Re-initialize variables
-		  j = 0;
-		  flag_filter = 0;
-		  max_y = 0;
-		  max_x = 0;
-
-		  //Heart Rate calculation
-		  arm_correlate_f32((const float32_t *) data_10s_ir, (uint32_t) LENGTH_DATA_10s, (const float32_t *) data_10s_ir, (uint32_t) LENGTH_DATA_10s, (float32_t *) auto_corr);
-		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&auto_corr, (uint16_t)4*(2*LENGTH_DATA_10s-1), HAL_MAX_DELAY);
-
-//		  for(i = (LENGTH_DATA_10s+SHIFT); i < (2*LENGTH_DATA_10s-1); i++)
-//		  {
-//			  if (auto_corr[i]>max_y)
-//			  {
-//				  max_y = auto_corr[i];
-//				  max_x = i+SHIFT-LENGTH_DATA_10s;
-//			  }
-//		  }
-//		  Heart_Rate = (float32_t)((LENGTH_DATA * 60) / max_x);
-//		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&max_x, (uint16_t)2, HAL_MAX_DELAY);
-//		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&Heart_Rate, (uint16_t)4, HAL_MAX_DELAY);
+		  HR = heart_rate_calculation();
+		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&HR, (uint16_t)4, HAL_MAX_DELAY);
 	  }
 
     /* USER CODE END WHILE */
@@ -558,17 +489,17 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
 
 		//Data acquisition
-//		number_available_samples=heartrate10_number_available_samples();
+//		number_available_samples=HEARTRATE10_NUMBER_AVAILABLE_SAMPLES();
 //		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&number_available_samples, 1, 1000);
 		READ(HEARTRATE10_REG_INT_STATUS, &rd_dat);
 		for(i=0;i<block_size;i++)
 		{
-			heartrate10_read_2leds_fifo_data(&data);
+			HEARTRATE10_READ_2LEDS_FIFO_DATA(&data);
 //			HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data, 8, 1000);
-			block_data_ir[i+j*block_size]=(float32_t)data.ir;									//Stock IR data on the IR buffer until the define number of samples has been reached
-//			HAL_UART_Transmit(&hlpuart1, (uint8_t*)&block_data_ir[i+j*block_size], 4, 1000);
-			block_data_red[i+j*block_size]=(float32_t)data.red;									//Stock red data on the IR buffer until the define number of samples has been reached
-//			HAL_UART_Transmit(&hlpuart1, (uint8_t*)&block_data_red[i+j*block_size], 4, 1000);
+			data_1s_ir[i+j*block_size]=(float32_t)data.ir;									//Stock IR data on the IR buffer until the define number of samples has been reached
+//			HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_1s_ir[i+j*block_size], 4, 1000);
+			data_1s_red[i+j*block_size]=(float32_t)data.red;									//Stock red data on the IR buffer until the define number of samples has been reached
+//			HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_1s_red[i+j*block_size], 4, 1000);
 		}
 //		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&j, 1, 1000);
 
@@ -581,15 +512,6 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 	}
 }
 
-void IIR_filter(void)
-{
-	arm_biquad_cascade_df2T_f32(&S_ir, inputF32_ir, outputF32_ir, LENGTH_DATA);					//Filter IR data by blocks of LENGTH_DATA
-	arm_biquad_cascade_df2T_f32(&S_red, inputF32_red, outputF32_red, LENGTH_DATA);				//Filter red data by blocks of LENGTH_DATA
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)block_data_ir, (uint16_t)4*LENGTH_DATA, 1000);
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)block_data_red, (uint16_t)4*LENGTH_DATA, 1000);
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)output_ir, (uint16_t)4*LENGTH_DATA, 1000);
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)output_red, (uint16_t)4*LENGTH_DATA, 1000);
-}
 /* USER CODE END 4 */
 
 /**

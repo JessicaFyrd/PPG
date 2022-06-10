@@ -29,27 +29,30 @@
 *      Author: Jessica Fayard
 */
 
+//Includes ===========================================================================================================================================
 #include "MAX86916_ppg.h"
 #include "main.h"
 
-//Variables
+
+//Variables ==========================================================================================================================================
 I2C_HandleTypeDef I2C;
 HAL_StatusTypeDef fifo_read;
-uint8_t buf_r=0; // Read value
-uint8_t buf[32]={0}; // Write value
+uint8_t buf_r=0; 				// Read value
+uint8_t buf[32]={0}; 			// Write value
 data_4leds_TypeDef dat;
 
-//Functions
-heartrate10_return_value_t heartrate10_default_4leds_cfg(I2C_HandleTypeDef i2c)
+
+//Functions ==========================================================================================================================================
+heartrate10_return_value_t HEARTRATE10_DEFAULT_4LEDS_CFG(I2C_HandleTypeDef i2c)
 {
 	I2C=i2c;
 
     //Shutdown device
-	heartrate10_shutdown_device();
+	HEARTRATE10_SHUTDOWN_DEVICE();
     READ(HEARTRATE10_REG_MODE_CFG1, &buf_r);
 
     //Reset device
-    heartrate10_reset_device();
+    HEARTRATE10_RESET_DEVICE();
 
     //Part ID
     READ(HEARTRATE10_REG_PART_ID, &buf_r);
@@ -58,43 +61,37 @@ heartrate10_return_value_t heartrate10_default_4leds_cfg(I2C_HandleTypeDef i2c)
         return HEARTRATE10_ERROR;
     }
 
-    //Led test
-//	buf[0]=led_enable(LED3);
-//	buf[0]=led_enable(LED2);
-//	buf[0]=led_enable(LED3);
-//	buf[0]=led_enable(LED4);
-
     //Set flex led mode
-    heartrate10_set_mode(MAX86916_MODE_FLEX);
+    HEARTRATE10_SET_MODE(MAX86916_MODE_FLEX);
 
     //Set led sequences [ IR, RED, GREEN, BLUE ]
     	//RED-IR
-    heartrate10_set_led_sequence_1(MAX86916_LED_SEQ_LED1);
-    heartrate10_set_led_sequence_2(MAX86916_LED_SEQ_LED2);
+    HEARTRATE10_SET_LED_SEQUENCE_1(MAX86916_LED_SEQ_LED1);
+    HEARTRATE10_SET_LED_SEQUENCE_2(MAX86916_LED_SEQ_LED2);
     READ(HEARTRATE10_REG_LED_SEQ1, &buf_r);
     	//BLUE-GREEN
-    heartrate10_set_led_sequence_3(MAX86916_LED_SEQ_LED3);
-    heartrate10_set_led_sequence_4(MAX86916_LED_SEQ_LED4);
+    HEARTRATE10_SET_LED_SEQUENCE_3(MAX86916_LED_SEQ_LED3);
+    HEARTRATE10_SET_LED_SEQUENCE_4(MAX86916_LED_SEQ_LED4);
     READ(HEARTRATE10_REG_LED_SEQ2, &buf_r);
 
     //Set scale range, sample per second and led pulse widths
-    heartrate10_adc_range(MAX86916_ADC_RANGE_32768);
-    heartrate10_sr(MAX86916_SR_100);
-    heartrate10_led_pulse_width(MAX86916_LED_PW_70);
+    HEARTRATE10_ADC_RANGE(MAX86916_ADC_RANGE_32768);
+    HEARTRATE10_SR(MAX86916_SR_100);
+    HEARTRATE10_LED_PULSE_WIDTH(MAX86916_LED_PW_70);
     READ(HEARTRATE10_REG_MODE_CFG2, &buf_r);
 
     //Set led range
-    heartrate10_led_range_1(MAX86916_LED_RANGE_50); //current range 0 to 50 mA for the 4 LEDs
-    heartrate10_led_range_2(MAX86916_LED_RANGE_50);
-    heartrate10_led_range_3(MAX86916_LED_RANGE_50);
-    heartrate10_led_range_4(MAX86916_LED_RANGE_50);
+    HEARTRATE10_LED_RANGE_1(MAX86916_LED_RANGE_50); //current range 0 to 50 mA for the 4 LEDs
+    HEARTRATE10_LED_RANGE_2(MAX86916_LED_RANGE_50);
+    HEARTRATE10_LED_RANGE_3(MAX86916_LED_RANGE_50);
+    HEARTRATE10_LED_RANGE_4(MAX86916_LED_RANGE_50);
 
     //Set led power
     buf[0]=0xFF; //nominal current pulse amplitude of 50.4 mA for all the LEDs
-    heartrate10_led_power_1(buf[0]); //IR
-    heartrate10_led_power_2(buf[0]); //RED
-    heartrate10_led_power_3(buf[0]); //GREEN
-    heartrate10_led_power_4(buf[0]); //BLUE
+    HEARTRATE10_LED_POWER_1(buf[0]); //IR
+    HEARTRATE10_LED_POWER_2(buf[0]); //RED
+    HEARTRATE10_LED_POWER_3(buf[0]); //GREEN
+    HEARTRATE10_LED_POWER_4(buf[0]); //BLUE
 
     //Sample average
     heartrate10_FIFO_SAMPLE_AVERAGE(MAX86916_FIFO_SAMPLE_AVERAGE_1);
@@ -117,16 +114,16 @@ heartrate10_return_value_t heartrate10_default_4leds_cfg(I2C_HandleTypeDef i2c)
     return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_default_2leds_cfg(I2C_HandleTypeDef i2c)
+heartrate10_return_value_t HEARTRATE10_DEFAULT_2LEDS_CFG(I2C_HandleTypeDef i2c)
 {
 	I2C=i2c;
 
     //Shutdown device
-	heartrate10_shutdown_device();
+	HEARTRATE10_SHUTDOWN_DEVICE();
     READ(HEARTRATE10_REG_MODE_CFG1, &buf_r);
 
     //Reset device
-    heartrate10_reset_device();
+    HEARTRATE10_RESET_DEVICE();
 
     //Part ID
     READ(HEARTRATE10_REG_PART_ID, &buf_r);
@@ -135,44 +132,38 @@ heartrate10_return_value_t heartrate10_default_2leds_cfg(I2C_HandleTypeDef i2c)
         return HEARTRATE10_ERROR;
     }
 
-    //Led test
-//	buf[0]=led_enable(LED3);
-//	buf[0]=led_enable(LED2);
-//	buf[0]=led_enable(LED3);
-//	buf[0]=led_enable(LED4);
-
     //Set flex led mode
-    heartrate10_set_mode(MAX86916_MODE_LED1_LED2);
+    HEARTRATE10_SET_MODE(MAX86916_MODE_LED1_LED2);
 
     //Set led sequences [ IR, RED, GREEN, BLUE ]
     	//RED-IR
-    heartrate10_set_led_sequence_1(MAX86916_LED_SEQ_LED1);
-    heartrate10_set_led_sequence_2(MAX86916_LED_SEQ_LED2);
+    HEARTRATE10_SET_LED_SEQUENCE_1(MAX86916_LED_SEQ_LED1);
+    HEARTRATE10_SET_LED_SEQUENCE_2(MAX86916_LED_SEQ_LED2);
     READ(HEARTRATE10_REG_LED_SEQ1, &buf_r);
     	//BLUE-GREEN
-    heartrate10_set_led_sequence_3(MAX86916_LED_SEQ_OFF);
-    heartrate10_set_led_sequence_4(MAX86916_LED_SEQ_OFF);
+    HEARTRATE10_SET_LED_SEQUENCE_3(MAX86916_LED_SEQ_OFF);
+    HEARTRATE10_SET_LED_SEQUENCE_4(MAX86916_LED_SEQ_OFF);
     READ(HEARTRATE10_REG_LED_SEQ2, &buf_r);
 
     //Set scale range, sample per second and led pulse widths
-    heartrate10_adc_range(MAX86916_ADC_RANGE_32768);
-    heartrate10_sr(MAX86916_SR_200);
-    heartrate10_led_pulse_width(MAX86916_LED_PW_70);
+    HEARTRATE10_ADC_RANGE(MAX86916_ADC_RANGE_32768);
+    HEARTRATE10_SR(MAX86916_SR_200);
+    HEARTRATE10_LED_PULSE_WIDTH(MAX86916_LED_PW_70);
     READ(HEARTRATE10_REG_MODE_CFG2, &buf_r);
 
     //Set led range
-    heartrate10_led_range_1(MAX86916_LED_RANGE_50); //current range 0 to 50 mA for the 4 LEDs
-    heartrate10_led_range_2(MAX86916_LED_RANGE_50);
-    heartrate10_led_range_3(MAX86916_LED_RANGE_50);
-    heartrate10_led_range_4(MAX86916_LED_RANGE_50);
+    HEARTRATE10_LED_RANGE_1(MAX86916_LED_RANGE_50); //current range 0 to 50 mA for the 4 LEDs
+    HEARTRATE10_LED_RANGE_2(MAX86916_LED_RANGE_50);
+    HEARTRATE10_LED_RANGE_3(MAX86916_LED_RANGE_50);
+    HEARTRATE10_LED_RANGE_4(MAX86916_LED_RANGE_50);
 
     //Set led power
     buf[0]=0xFF; //nominal current pulse amplitude of 50.4 mA for all the LEDs
-    heartrate10_led_power_1(buf[0]); 	//IR
-    heartrate10_led_power_2(buf[0]); 	//RED
+    HEARTRATE10_LED_POWER_1(buf[0]); 	//IR
+    HEARTRATE10_LED_POWER_2(buf[0]); 	//RED
     buf[0]=0x00;
-    heartrate10_led_power_3(buf[0]); 	//nominal current pulse amplitude of 0 mA for green LED
-    heartrate10_led_power_4(buf[0]); 	//nominal current pulse amplitude of 0 mA for blue LED
+    HEARTRATE10_LED_POWER_3(buf[0]); 	//nominal current pulse amplitude of 0 mA for green LED
+    HEARTRATE10_LED_POWER_4(buf[0]); 	//nominal current pulse amplitude of 0 mA for blue LED
 
     //Sample average
     heartrate10_FIFO_SAMPLE_AVERAGE(MAX86916_FIFO_SAMPLE_AVERAGE_1);
@@ -184,8 +175,8 @@ heartrate10_return_value_t heartrate10_default_2leds_cfg(I2C_HandleTypeDef i2c)
     heartrate10_FIFO_A_FULL(MAX86916_FIFO_A_FULL_20);
 
     //Enable Int on data read
-    heartrate10_A_FULL_EN(MAX86916_A_FULL_DIS);
-    heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_EN);
+    heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);					//Disable interruption when a new sample is in FIFO
+    heartrate10_A_FULL_EN(MAX86916_A_FULL_EN);					//Enable interruption when a watermark level of samples is in FIFO
     heartrate10_ALC_OVF_EN(MAX86916_ALC_OVF_DIS);
     heartrate10_PROX_INT_EN(MAX86916_PROX_INT_DIS);
     READ(HEARTRATE10_REG_INT_ENABLE, &buf_r);
@@ -195,7 +186,7 @@ heartrate10_return_value_t heartrate10_default_2leds_cfg(I2C_HandleTypeDef i2c)
     return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_shutdown_device(void)
+heartrate10_return_value_t HEARTRATE10_SHUTDOWN_DEVICE(void)
 {
 	buf[0]=0x80; //0b1000 0000
 	SEND(HEARTRATE10_REG_MODE_CFG1, buf);
@@ -204,7 +195,7 @@ heartrate10_return_value_t heartrate10_shutdown_device(void)
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_reset_device(void)
+heartrate10_return_value_t HEARTRATE10_RESET_DEVICE(void)
 {
 	buf[0]=0x40; //0b0100 0000
 	SEND(HEARTRATE10_REG_MODE_CFG1, buf);
@@ -217,7 +208,7 @@ heartrate10_return_value_t heartrate10_reset_device(void)
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_set_mode(MAX86916_MODE_TypeDef MODE)
+heartrate10_return_value_t HEARTRATE10_SET_MODE(MAX86916_MODE_TypeDef MODE)
 {
     READ(HEARTRATE10_REG_MODE_CFG1, &buf_r);
     buf[0]=MODE|(buf_r&0b00111000);
@@ -227,7 +218,7 @@ heartrate10_return_value_t heartrate10_set_mode(MAX86916_MODE_TypeDef MODE)
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_set_led_sequence_1(MAX86916_LED_SEQ_PILOT_TypeDef SEQ)
+heartrate10_return_value_t HEARTRATE10_SET_LED_SEQUENCE_1(MAX86916_LED_SEQ_PILOT_TypeDef SEQ)
 {
 	READ(HEARTRATE10_REG_LED_SEQ1, &buf_r);
 	buf[0]=SEQ|(buf_r&0b11110000);
@@ -237,7 +228,7 @@ heartrate10_return_value_t heartrate10_set_led_sequence_1(MAX86916_LED_SEQ_PILOT
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_set_led_sequence_2(MAX86916_LED_SEQ_PILOT_TypeDef SEQ)
+heartrate10_return_value_t HEARTRATE10_SET_LED_SEQUENCE_2(MAX86916_LED_SEQ_PILOT_TypeDef SEQ)
 {
 	READ(HEARTRATE10_REG_LED_SEQ1, &buf_r);
 	buf[0]=(SEQ<<4)|(buf_r&0b00001111);
@@ -247,7 +238,7 @@ heartrate10_return_value_t heartrate10_set_led_sequence_2(MAX86916_LED_SEQ_PILOT
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_set_led_sequence_3(MAX86916_LED_SEQ_PILOT_TypeDef SEQ)
+heartrate10_return_value_t HEARTRATE10_SET_LED_SEQUENCE_3(MAX86916_LED_SEQ_PILOT_TypeDef SEQ)
 {
 	READ(HEARTRATE10_REG_LED_SEQ2, &buf_r);
 	buf[0]=SEQ|(buf_r&0b11110000);
@@ -257,7 +248,7 @@ heartrate10_return_value_t heartrate10_set_led_sequence_3(MAX86916_LED_SEQ_PILOT
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_set_led_sequence_4(MAX86916_LED_SEQ_PILOT_TypeDef SEQ)
+heartrate10_return_value_t HEARTRATE10_SET_LED_SEQUENCE_4(MAX86916_LED_SEQ_PILOT_TypeDef SEQ)
 {
 	READ(HEARTRATE10_REG_LED_SEQ2, &buf_r);
 	buf[0]=(SEQ<<4)|(buf_r&0b00001111);
@@ -267,7 +258,7 @@ heartrate10_return_value_t heartrate10_set_led_sequence_4(MAX86916_LED_SEQ_PILOT
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_adc_range(MAX86916_ADC_range_TypeDef ADC_RANGE)
+heartrate10_return_value_t HEARTRATE10_ADC_RANGE(MAX86916_ADC_range_TypeDef ADC_RANGE)
 {
     READ(HEARTRATE10_REG_MODE_CFG2, &buf_r);
     buf[0]=(ADC_RANGE<<5)|(buf_r&0b10011111);
@@ -277,7 +268,7 @@ heartrate10_return_value_t heartrate10_adc_range(MAX86916_ADC_range_TypeDef ADC_
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_sr(MAX86916_SR_TypeDef SR)
+heartrate10_return_value_t HEARTRATE10_SR(MAX86916_SR_TypeDef SR)
 {
     READ(HEARTRATE10_REG_MODE_CFG2, &buf_r);
     buf[0]=(SR<<2)|(buf_r&0b11100011);
@@ -287,7 +278,7 @@ heartrate10_return_value_t heartrate10_sr(MAX86916_SR_TypeDef SR)
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_led_pulse_width(MAX86916_LED_PW_TypeDef LED_PW)
+heartrate10_return_value_t HEARTRATE10_LED_PULSE_WIDTH(MAX86916_LED_PW_TypeDef LED_PW)
 {
     READ(HEARTRATE10_REG_MODE_CFG2, &buf_r);
     buf[0]=LED_PW|(buf_r&0b11111100);
@@ -297,7 +288,7 @@ heartrate10_return_value_t heartrate10_led_pulse_width(MAX86916_LED_PW_TypeDef L
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_led_range_1(MAX86916_LED_RANGE_TypeDef LED_RANGE)
+heartrate10_return_value_t HEARTRATE10_LED_RANGE_1(MAX86916_LED_RANGE_TypeDef LED_RANGE)
 {
     READ(HEARTRATE10_REG_LED_RANGE, &buf_r);
     buf[0]=LED_RANGE|(buf_r&0b11111100);
@@ -307,7 +298,7 @@ heartrate10_return_value_t heartrate10_led_range_1(MAX86916_LED_RANGE_TypeDef LE
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_led_range_2(MAX86916_LED_RANGE_TypeDef LED_RANGE)
+heartrate10_return_value_t HEARTRATE10_LED_RANGE_2(MAX86916_LED_RANGE_TypeDef LED_RANGE)
 {
     READ(HEARTRATE10_REG_LED_RANGE, &buf_r);
     buf[0]=(LED_RANGE<<2)|(buf_r&0b11110011);
@@ -317,7 +308,7 @@ heartrate10_return_value_t heartrate10_led_range_2(MAX86916_LED_RANGE_TypeDef LE
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_led_range_3(MAX86916_LED_RANGE_TypeDef LED_RANGE)
+heartrate10_return_value_t HEARTRATE10_LED_RANGE_3(MAX86916_LED_RANGE_TypeDef LED_RANGE)
 {
     READ(HEARTRATE10_REG_LED_RANGE, &buf_r);
     buf[0]=(LED_RANGE<<4)|(buf_r&0b11001111);
@@ -327,7 +318,7 @@ heartrate10_return_value_t heartrate10_led_range_3(MAX86916_LED_RANGE_TypeDef LE
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_led_range_4(MAX86916_LED_RANGE_TypeDef LED_RANGE)
+heartrate10_return_value_t HEARTRATE10_LED_RANGE_4(MAX86916_LED_RANGE_TypeDef LED_RANGE)
 {
     READ(HEARTRATE10_REG_LED_RANGE, &buf_r);
     buf[0]=(LED_RANGE<<6)|(buf_r&0b00111111);
@@ -337,7 +328,7 @@ heartrate10_return_value_t heartrate10_led_range_4(MAX86916_LED_RANGE_TypeDef LE
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_led_power_1(uint8_t LED_PA_1)
+heartrate10_return_value_t HEARTRATE10_LED_POWER_1(uint8_t LED_PA_1)
 {
     buf[0]=LED_PA_1;
     SEND(HEARTRATE10_REG_LED1_PA, buf);
@@ -346,7 +337,7 @@ heartrate10_return_value_t heartrate10_led_power_1(uint8_t LED_PA_1)
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_led_power_2(uint8_t LED_PA_2)
+heartrate10_return_value_t HEARTRATE10_LED_POWER_2(uint8_t LED_PA_2)
 {
     buf[0]=LED_PA_2;
     SEND(HEARTRATE10_REG_LED2_PA, buf);
@@ -355,7 +346,7 @@ heartrate10_return_value_t heartrate10_led_power_2(uint8_t LED_PA_2)
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_led_power_3(uint8_t LED_PA_3)
+heartrate10_return_value_t HEARTRATE10_LED_POWER_3(uint8_t LED_PA_3)
 {
     buf[0]=LED_PA_3;
     SEND(HEARTRATE10_REG_LED3_PA, buf);
@@ -364,7 +355,7 @@ heartrate10_return_value_t heartrate10_led_power_3(uint8_t LED_PA_3)
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_led_power_4(uint8_t LED_PA_4)
+heartrate10_return_value_t HEARTRATE10_LED_POWER_4(uint8_t LED_PA_4)
 {
     buf[0]=LED_PA_4;
     SEND(HEARTRATE10_REG_LED4_PA, buf);
@@ -443,60 +434,23 @@ heartrate10_return_value_t heartrate10_PROX_INT_EN(MAX86916_PROX_INT_EN_TypeDef 
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_PROX_INT_THRESHOLD(uint8_t PROX_INT_THRESHOLD)
+HAL_StatusTypeDef HEARTRATE10_FIFO_READ(uint8_t *pData, uint8_t RX_LEN)
 {
-    buf[0]=PROX_INT_THRESHOLD; 					//The Proximity Mode threshold is defined by register PROX_INT_THRESH multiplied by 2048
-    SEND(HEARTRATE10_REG_INT_ENABLE, buf);
-    READ(HEARTRATE10_REG_INT_ENABLE, &buf_r);
-
-	return HEARTRATE10_OK;
+    return (HAL_I2C_Mem_Read(&I2C, (uint16_t)HEARTRATE10_SET_DEV_ADDR_R, (uint16_t)HEARTRATE10_REG_FIFO_DATA, I2C_MEMADD_SIZE_8BIT, pData, RX_LEN, 1000));
 }
 
-uint8_t heartrate10_READ_RD_PTR(void)
-{
-    READ(HEARTRATE10_REG_FIFO_RD_PTR, &buf_r);
-
-	return buf_r;
-}
-
-uint8_t heartrate10_READ_WR_PTR(void)
-{
-    READ(HEARTRATE10_REG_FIFO_WR_PTR, &buf_r);
-
-	return buf_r;
-}
-
-heartrate10_return_value_t heartrate10_WRITE_RD_PTR(uint8_t RD_POINTER)
-{
-    buf[0]=RD_POINTER;
-    SEND(HEARTRATE10_REG_FIFO_RD_PTR, buf);
-    READ(HEARTRATE10_REG_FIFO_RD_PTR, &buf_r);
-
-	return HEARTRATE10_OK;
-}
-
-uint8_t heartrate10_get_int_pin (GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin_y) //x the port and y the pin number
-{
-    return HAL_GPIO_ReadPin(GPIOx, GPIO_Pin_y);
-}
-
-HAL_StatusTypeDef heartrate10_fifo_read(uint8_t *pData, uint8_t rx_len)
-{
-    return (HAL_I2C_Mem_Read(&I2C, (uint16_t)HEARTRATE10_SET_DEV_ADDR_R, (uint16_t)HEARTRATE10_REG_FIFO_DATA, I2C_MEMADD_SIZE_8BIT, pData, rx_len, 1000));
-}
-
-uint32_t heartrate10_read_fifo_sample(void)
+uint32_t HEARTRATE10_READ_FIFO_SAMPLE(void)
 {
     uint32_t sample;
     uint8_t sample_parts[ 3 ] = { 0 };
-    heartrate10_fifo_read(sample_parts, 3);
+    HEARTRATE10_FIFO_READ(sample_parts, 3);
     sample = ( uint32_t )sample_parts[ 2 ] | ( ( uint32_t )sample_parts[ 1 ] << 8 ) | ( ( uint32_t )sample_parts[ 0 ] << 16 );
     sample &= 0x0007FFFF; //last 19-bits taken
 
     return sample;
 }
 
-uint8_t heartrate10_number_available_samples(void)
+uint8_t HEARTRATE10_NUMBER_AVAILABLE_SAMPLES(void)
 {
 	uint8_t nb_available_samples;
 	READ(HEARTRATE10_REG_FIFO_OVF_CNT,&buf[0]);
@@ -521,10 +475,10 @@ uint8_t heartrate10_number_available_samples(void)
 	return nb_available_samples;
 }
 
-HAL_StatusTypeDef heartrate10_read_complete_fifo_data(data_4leds_TypeDef *pData)
+HAL_StatusTypeDef HEARTRATE10_READ_COMPLETE_FIFO_DATA(data_4leds_TypeDef *pData)
 {
     uint8_t sample_parts[ 12 ] = { 0 };
-    fifo_read = heartrate10_fifo_read(sample_parts, 12 );
+    fifo_read = HEARTRATE10_FIFO_READ(sample_parts, 12 );
     pData->ir = sample_parts[ 2 ] | ( ( uint32_t )sample_parts[ 1 ] << 8 ) | ( ( uint32_t )sample_parts[ 0 ] << 16 );
     pData->ir &= 0x0007FFFF;
     pData->red = sample_parts[ 5 ] | ( ( uint32_t )sample_parts[ 4 ] << 8 ) | ( ( uint32_t )sample_parts[ 3 ] << 16 );
@@ -537,29 +491,16 @@ HAL_StatusTypeDef heartrate10_read_complete_fifo_data(data_4leds_TypeDef *pData)
     return fifo_read;
 }
 
-HAL_StatusTypeDef heartrate10_read_2leds_fifo_data(data_2leds_TypeDef *pData)
+HAL_StatusTypeDef HEARTRATE10_READ_2LEDS_FIFO_DATA(data_2leds_TypeDef *pData)
 {
     uint8_t sample_parts[ 6 ] = { 0 };
-    fifo_read = heartrate10_fifo_read(sample_parts, 6 );
+    fifo_read = HEARTRATE10_FIFO_READ(sample_parts, 6 );
     pData->ir = sample_parts[ 2 ] | ( ( uint32_t )sample_parts[ 1 ] << 8 ) | ( ( uint32_t )sample_parts[ 0 ] << 16 );
     pData->ir &= 0x0007FFFF;
     pData->red = sample_parts[ 5 ] | ( ( uint32_t )sample_parts[ 4 ] << 8 ) | ( ( uint32_t )sample_parts[ 3 ] << 16 );
     pData->red &= 0x0007FFFF;
 
     return fifo_read;
-}
-
-uint8_t led_enable(led_number_TypeDef number)
-{
-	uint8_t comp;
-	comp=0;
-
-	buf[0]=number;
-	SEND(HEARTRATE10_REG_LED_COMPARATOR_EN,buf);
-	READ(HEARTRATE10_REG_LED_COMPARATOR_STATUS,&buf_r);
-	comp = buf_r;
-
-	return comp;
 }
 
 HAL_StatusTypeDef READ(uint16_t Address, uint8_t *pData){
