@@ -135,9 +135,6 @@ dsp_return_value_t IIR_FILTER(void)
 uint16_t max_x = 0;										//The max is the number of points, 2000 here so 16 bits is enough
 uint64_t max_y = 0; 									//In Matlab, the max is about 4,5.10^9 so 32 bits is too short
 float32_t Heart_Rate = 0;
-extern uint16_t i;
-extern uint8_t j;
-extern uint8_t flag_filter;
 
 
 //Buffers ============================================================================================================================================
