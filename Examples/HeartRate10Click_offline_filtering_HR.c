@@ -59,7 +59,7 @@ RTC_HandleTypeDef hrtc;
 PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
-//Data acquisition PV
+//Data ACQUISITION PV
 extern float32_t data_ir[LENGTH_WHOLE_DATA];		//All the offline raw data stocked in an other .c
 float32_t block_data_ir[LENGTH_DATA] = {0};			//Buffer which simulate the buffer on which the data will be stocked in the online mode
 float32_t data_10s_ir[LENGTH_DATA_10s] = {0};
@@ -171,7 +171,7 @@ int main(void)
 		memcpy(&data_10s_ir[0],&data_10s_ir[LENGTH_DATA],9*LENGTH_DATA*4); //Memory copy in the 1st argument from the second with the size in 3rd argument (in bytes)
 
 		//Filter
-		IIR_filter();
+		IIR_FILTER();
 
 		//Add a LENGTH_DATA size block on the right (add a new second of data)
 		memcpy(&data_10s_ir[9*LENGTH_DATA],testOutput_ir,LENGTH_DATA*4);
@@ -530,7 +530,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 	}
 }
 
-void IIR_filter(void)
+void IIR_FILTER(void)
 {
 	//Filter data by blocks of block_size
 	for(i = 0; i < numBlocks; i++)

@@ -1,7 +1,84 @@
+/*
+ * DSP.c
+ *
+ *  Created on: 10 Jun 2022
+ *      Author: Jessica Fayard
+ */
+
+
 //Includes ===========================================================================================================================================
-#include <DSP.h>
+#include "DSP.h"
 #include "arm_math.h"
 #include "string.h"
+#include "MAX86916_ppg.h"
+#include "Board.h"
+
+
+
+
+/*==================================================================================================================================================*/
+/*=================================================================Acquisition=======================================================================*/
+/*==================================================================================================================================================*/
+
+
+//Variables ==========================================================================================================================================
+data_2leds_TypeDef data;								//Data which contains 2 uint32 variables, one for each led
+uint8_t rd_dat = 0;
+uint8_t number_available_samples = 0;
+uint16_t i = 0;
+uint8_t j = 0;
+uint8_t flag_filter = 0;
+uint32_t block_size = BLOCK_SIZE;
+uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;			//Number of blocks to have all the samples in data_1s_ir when filtering BLOCK_SIZE samples at a time
+extern UART_HandleTypeDef hlpuart1;
+
+
+//Buffers ============================================================================================================================================
+float32_t data_1s_ir[LENGTH_DATA] = {0};						//1 second IR buffer
+float32_t data_1s_red[LENGTH_DATA] = {0};						//1 second red buffer
+
+
+//Functions ==========================================================================================================================================
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == GPIO_PIN_3) 													// If The INT Source Is EXTI Line3
+	{
+		ACQUISITION();
+	}
+}
+
+dsp_return_value_t ACQUISITION(void)
+{
+	//LEDs
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET); 					// Set the Output (LED) Pin (Red) high to see the interrupt
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+
+	//Data ACQUISITION
+//	number_available_samples=HEARTRATE10_NUMBER_AVAILABLE_SAMPLES();
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&number_available_samples, 1, 1000);
+	READ(HEARTRATE10_REG_INT_STATUS, &rd_dat);
+	for(i=0;i<block_size;i++)
+	{
+		HEARTRATE10_READ_2LEDS_FIFO_DATA(&data);
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data, 8, 1000);
+		data_1s_ir[i+j*block_size]=(float32_t)data.ir;									//Stock IR data on the IR buffer until the define number of samples has been reached
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_1s_ir[i+j*block_size], 4, 1000);
+		data_1s_red[i+j*block_size]=(float32_t)data.red;									//Stock red data on the IR buffer until the define number of samples has been reached
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_1s_red[i+j*block_size], 4, 1000);
+	}
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&j, 1, 1000);
+
+	//Counter
+	j++;
+	if (j == numBlocks)			//When LENGTH_DATA data have been acquired
+	{
+		flag_filter = 1;
+	}
+
+	return DSP_OK;
+}
+
+
 
 
 /*==================================================================================================================================================*/
@@ -16,16 +93,12 @@ const float32_t iirCoeffs32[NUMBER_COEFS] =						//Coefficients buffer
 {
 		0.1245,         0,   -0.1245,    1.7492,    -0.7509 	//b0 b1 b2 a1 a2 -->Matlab coefficient with erasing a0 which is 1 and inverted the a signs
 };
-
-float32_t data_1s_ir[LENGTH_DATA] = {0};						//1 second IR buffer
-float32_t data_1s_red[LENGTH_DATA] = {0};						//1 second red buffer
 float32_t data_1s_ir_filtered[LENGTH_DATA] = {0};				//Filter IR data buffer
 float32_t data_1s_red_filtered[LENGTH_DATA] = {0};				//Filter red data buffer
 
 arm_biquad_cascade_df2T_instance_f32 S_ir, S_red;				//Type that contains the number of stages, a pointer to the buffer with coefficients and a pointer to the state
 
 
-//Functions ==========================================================================================================================================
 //Initialisation =====================================================================================================================================
 dsp_return_value_t DSP_INIT(void)
 {
@@ -35,7 +108,9 @@ dsp_return_value_t DSP_INIT(void)
 	return DSP_OK;
 }
 
-dsp_return_value_t IIR_filter(void)
+
+//Functions ==========================================================================================================================================
+dsp_return_value_t IIR_FILTER(void)
 {
 	arm_biquad_cascade_df2T_f32(&S_ir, data_1s_ir, data_1s_ir_filtered, LENGTH_DATA);					//Filter IR data by blocks of LENGTH_DATA
 	arm_biquad_cascade_df2T_f32(&S_red, data_1s_red, data_1s_red_filtered, LENGTH_DATA);				//Filter red data by blocks of LENGTH_DATA
@@ -47,7 +122,6 @@ dsp_return_value_t IIR_filter(void)
 
 	return DSP_OK;
 }
-
 
 
 
@@ -73,7 +147,7 @@ float32_t auto_corr[2*LENGTH_DATA_10s-1] = {0};					//Autocorrelation buffer
 
 
 //Functions ==========================================================================================================================================
-dsp_return_value_t roll_buffer(void)
+dsp_return_value_t ROLL_BUFFER(void)
 {
 	//Shift a LENGTH_DATA size block to the left (erasing the 1st second of data)
 	memcpy(&data_10s_ir[0],&data_10s_ir[LENGTH_DATA],9*LENGTH_DATA*4); //Memory copy in the 1st argument from the second with the size in 3rd argument (in bytes)
@@ -88,7 +162,7 @@ dsp_return_value_t roll_buffer(void)
 	return DSP_OK;
 }
 
-dsp_return_value_t auto_correlation(void)
+dsp_return_value_t AUTO_CORRELATION(void)
 {
 	arm_correlate_f32((const float32_t *) data_10s_ir, (uint32_t) LENGTH_DATA_10s, (const float32_t *) data_10s_ir, (uint32_t) LENGTH_DATA_10s, (float32_t *) auto_corr);
 //	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&auto_corr, (uint16_t)4*(2*LENGTH_DATA_10s-1), HAL_MAX_DELAY);
@@ -96,13 +170,13 @@ dsp_return_value_t auto_correlation(void)
 	return DSP_OK;
 }
 
-float32_t heart_rate_calculation(void)
+float32_t HEART_RATE_CALCULATION(void)
 {
 	//Filter
-	IIR_filter();
+	IIR_FILTER();
 
 	//Delete the older second and add the new one (filtered data)
-	roll_buffer();
+	ROLL_BUFFER();
 
 	//Re-initialize variables
 	j = 0;
@@ -111,10 +185,10 @@ float32_t heart_rate_calculation(void)
 	max_x = 0;
 
 	//Heart Rate calculation
-	auto_correlation();
+	AUTO_CORRELATION();
 
 	//Maximum search for the second half with a little shift to erase the first pic
-	for(i = (LENGTH_DATA_10s+SHIFT); i < (LENGTH_DATA_10s+SHIFT+300); i++)
+	for(i = (LENGTH_DATA_10s+SHIFT); i < (2*LENGTH_DATA_10s-1); i++)
 	{
 		if (auto_corr[i]>max_y)
 		{

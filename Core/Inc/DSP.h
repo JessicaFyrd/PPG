@@ -2,11 +2,13 @@
  * DSP.h
  *
  *  Created on: 10 Jun 2022
- *      Author: Jessica
+ *      Author: Jessica Fayard
  */
+
 
 #ifndef SRC_DSP_H_
 #define SRC_DSP_H_
+
 
 
 //Includes ============================================================================================================================================
@@ -24,6 +26,8 @@ typedef enum
 } dsp_return_value_t;
 
 
+
+
 /*===================================================================================================================================================*/
 /*==================================================================Filtration=======================================================================*/
 /*===================================================================================================================================================*/
@@ -39,8 +43,8 @@ typedef enum
 
 //Functions  ==========================================================================================================================================
 dsp_return_value_t DSP_INIT(void);
-dsp_return_value_t IIR_filter(void);
-
+dsp_return_value_t ACQUISITION(void);
+dsp_return_value_t IIR_FILTER(void);
 
 
 
@@ -55,11 +59,10 @@ dsp_return_value_t IIR_filter(void);
 
 
 //Functions  ==========================================================================================================================================
-dsp_return_value_t DSP_INIT(void);
-dsp_return_value_t IIR_filter(void);
-dsp_return_value_t roll_buffer(void);
-dsp_return_value_t auto_correlation(void);
-float32_t heart_rate_calculation(void);
+dsp_return_value_t ROLL_BUFFER(void);
+dsp_return_value_t AUTO_CORRELATION(void);
+float32_t HEART_RATE_CALCULATION(void);
+
 
 
 #endif /* SRC_DSP_H_ */
