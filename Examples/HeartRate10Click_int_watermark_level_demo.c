@@ -104,7 +104,7 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   heartrate10_return_value_t err_t;
-  err_t = heartrate10_default_4leds_cfg(hi2c2);
+  err_t = HEARTRATE10_DEFAULT_4LEDS_CFG(hi2c2);
   if (err_t!=0){
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
   }
@@ -448,14 +448,14 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 	if(GPIO_Pin == GPIO_PIN_3) 						// If The INT Source Is EXTI Line3
 	{
 	    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9); 		// Toggle The Output (LED) Pin (Red) to see the interrupt
-		number_available_samples=heartrate10_number_available_samples();
+		number_available_samples=HEARTRATE10_NUMBER_AVAILABLE_SAMPLES();
 		READ(HEARTRATE10_REG_INT_STATUS, &rd_dat);
 		//HAL_UART_Transmit(&hlpuart1, (uint8_t*)&number_available_samples, 1, 1000);
 
 		//Read all the available data in FIFO and transmit it in UART
 		for(i=0;i<number_available_samples;i++)
 		{
-			heartrate10_read_complete_fifo_data(&data);
+			HEARTRATE10_READ_COMPLETE_FIFO_DATA(&data);
 			HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data, 16, 1000);
 		}
 	}

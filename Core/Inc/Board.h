@@ -39,7 +39,9 @@ static void MX_LPUART1_UART_Init(void);
 static void MX_USB_PCD_Init(void);
 static void MX_ICACHE_Init(void);
 static void MX_RTC_Init(void);
-board_return_value_t BOARD_INIT(void);
+board_return_value_t STM_INIT(void);
+board_return_value_t SENSOR_2LED_INIT(void);
+board_return_value_t SENSOR_4LED_INIT(void);
 
 
 

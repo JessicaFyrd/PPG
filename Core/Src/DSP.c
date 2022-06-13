@@ -43,17 +43,17 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin == GPIO_PIN_3) 													// If The INT Source Is EXTI Line3
 	{
-		ACQUISITION();
+		ACQUISITION_BY_BLOCKSIZE();
 	}
 }
 
-dsp_return_value_t ACQUISITION(void)
+dsp_return_value_t ACQUISITION_BY_BLOCKSIZE(void)
 {
 	//LEDs
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET); 					// Set the Output (LED) Pin (Red) high to see the interrupt
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
 
-	//Data ACQUISITION
+	//Data ACQUISITION_BY_BLOCKSIZE
 //	number_available_samples=HEARTRATE10_NUMBER_AVAILABLE_SAMPLES();
 //	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&number_available_samples, 1, 1000);
 	READ(HEARTRATE10_REG_INT_STATUS, &rd_dat);

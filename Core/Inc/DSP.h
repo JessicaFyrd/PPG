@@ -43,7 +43,7 @@ typedef enum
 
 //Functions  ==========================================================================================================================================
 dsp_return_value_t DSP_INIT(void);
-dsp_return_value_t ACQUISITION(void);
+dsp_return_value_t ACQUISITION_BY_BLOCKSIZE(void);
 dsp_return_value_t IIR_FILTER(void);
 
 

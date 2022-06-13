@@ -28,7 +28,7 @@ heartrate10_return_value_t err_t;
 
 
 //Initialisation =====================================================================================================================================
-board_return_value_t BOARD_INIT(void)
+board_return_value_t STM_INIT(void)
 {
 	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 	HAL_Init();
@@ -44,8 +44,23 @@ board_return_value_t BOARD_INIT(void)
 	MX_ICACHE_Init();
 	MX_RTC_Init();
 
-	//Sensor init
+	return BOARD_OK;
+}
+
+board_return_value_t SENSOR_2LED_INIT(void)
+{
 	err_t = HEARTRATE10_DEFAULT_2LEDS_CFG(hi2c2);
+	if (err_t!=0)
+	{
+	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
+	}
+
+	return BOARD_OK;
+}
+
+board_return_value_t SENSOR_4LED_INIT(void)
+{
+	err_t = HEARTRATE10_DEFAULT_4LEDS_CFG(hi2c2);
 	if (err_t!=0)
 	{
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);

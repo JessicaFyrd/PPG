@@ -107,9 +107,9 @@ int main(void)
   heartrate10_return_value_t err_t;
 
   //4 leds init
-//  err_t = heartrate10_default_4leds_cfg(hi2c2);
+//  err_t = HEARTRATE10_DEFAULT_4LEDS_CFG(hi2c2);
   //2 leds init
-  err_t = heartrate10_default_2leds_cfg(hi2c2);
+  err_t = HEARTRATE10_DEFAULT_2LEDS_CFG(hi2c2);
 
   if (err_t!=0){
 	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&err_t, 1, 1000);
@@ -123,11 +123,11 @@ int main(void)
   while (1)
   {
 	  READ(HEARTRATE10_REG_INT_STATUS, &rd_dat);
-	  number_available_samples=heartrate10_number_available_samples();
+	  number_available_samples=HEARTRATE10_NUMBER_AVAILABLE_SAMPLES();
 	  if (rd_dat & 0x40)
 	  {
 		  //4 leds read and transmit data via UART
-//		  heartrate10_read_complete_fifo_data(&data_4leds);
+//		  HEARTRATE10_READ_COMPLETE_FIFO_DATA(&data_4leds);
 //		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_4leds, 16, 1000);
 		  //2 Leds read and transmit data via UART
 		  heartrate10_read_2leds_fifo_data(&data_2leds);

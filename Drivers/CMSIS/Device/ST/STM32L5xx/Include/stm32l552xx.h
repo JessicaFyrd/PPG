@@ -15095,7 +15095,7 @@ typedef struct
 #define TSC_CR_TSCE              TSC_CR_TSCE_Msk                               /*!<Touch sensing controller enable */
 #define TSC_CR_START_Pos         (1U)
 #define TSC_CR_START_Msk         (0x1UL << TSC_CR_START_Pos)                   /*!< 0x00000002 */
-#define TSC_CR_START             TSC_CR_START_Msk                              /*!<Start ACQUISITION */
+#define TSC_CR_START             TSC_CR_START_Msk                              /*!<Start ACQUISITION_BY_BLOCKSIZE */
 #define TSC_CR_AM_Pos            (2U)
 #define TSC_CR_AM_Msk            (0x1UL << TSC_CR_AM_Pos)                      /*!< 0x00000004 */
 #define TSC_CR_AM                TSC_CR_AM_Msk                                 /*!<Acquisition mode */
@@ -15157,7 +15157,7 @@ typedef struct
 /*******************  Bit definition for TSC_IER register  ********************/
 #define TSC_IER_EOAIE_Pos        (0U)
 #define TSC_IER_EOAIE_Msk        (0x1UL << TSC_IER_EOAIE_Pos)                  /*!< 0x00000001 */
-#define TSC_IER_EOAIE            TSC_IER_EOAIE_Msk                             /*!<End of ACQUISITION interrupt enable */
+#define TSC_IER_EOAIE            TSC_IER_EOAIE_Msk                             /*!<End of ACQUISITION_BY_BLOCKSIZE interrupt enable */
 #define TSC_IER_MCEIE_Pos        (1U)
 #define TSC_IER_MCEIE_Msk        (0x1UL << TSC_IER_MCEIE_Pos)                  /*!< 0x00000002 */
 #define TSC_IER_MCEIE            TSC_IER_MCEIE_Msk                             /*!<Max count error interrupt enable */
@@ -15165,7 +15165,7 @@ typedef struct
 /*******************  Bit definition for TSC_ICR register  ********************/
 #define TSC_ICR_EOAIC_Pos        (0U)
 #define TSC_ICR_EOAIC_Msk        (0x1UL << TSC_ICR_EOAIC_Pos)                  /*!< 0x00000001 */
-#define TSC_ICR_EOAIC            TSC_ICR_EOAIC_Msk                             /*!<End of ACQUISITION interrupt clear */
+#define TSC_ICR_EOAIC            TSC_ICR_EOAIC_Msk                             /*!<End of ACQUISITION_BY_BLOCKSIZE interrupt clear */
 #define TSC_ICR_MCEIC_Pos        (1U)
 #define TSC_ICR_MCEIC_Msk        (0x1UL << TSC_ICR_MCEIC_Pos)                  /*!< 0x00000002 */
 #define TSC_ICR_MCEIC            TSC_ICR_MCEIC_Msk                             /*!<Max count error interrupt clear */
@@ -15173,7 +15173,7 @@ typedef struct
 /*******************  Bit definition for TSC_ISR register  ********************/
 #define TSC_ISR_EOAF_Pos         (0U)
 #define TSC_ISR_EOAF_Msk         (0x1UL << TSC_ISR_EOAF_Pos)                   /*!< 0x00000001 */
-#define TSC_ISR_EOAF             TSC_ISR_EOAF_Msk                              /*!<End of ACQUISITION flag */
+#define TSC_ISR_EOAF             TSC_ISR_EOAF_Msk                              /*!<End of ACQUISITION_BY_BLOCKSIZE flag */
 #define TSC_ISR_MCEF_Pos         (1U)
 #define TSC_ISR_MCEF_Msk         (0x1UL << TSC_ISR_MCEF_Pos)                   /*!< 0x00000002 */
 #define TSC_ISR_MCEF             TSC_ISR_MCEF_Msk                              /*!<Max count error flag */

@@ -38,6 +38,11 @@ int main(void)
 	SENSOR_2LED_INIT();
 	DSP_INIT();
 
+	//First, enable the cycle counter once at startup:
+	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+	DWT->CYCCNT = 0;
+	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
 	while (1)
 	{
 		//LEDs
@@ -48,7 +53,13 @@ int main(void)
 		if (flag_filter == 1)
 		{
 			HR = HEART_RATE_CALCULATION();
-			HAL_UART_Transmit(&hlpuart1, (uint8_t*)&HR, (uint16_t)4, HAL_MAX_DELAY);
+//			HAL_UART_Transmit(&hlpuart1, (uint8_t*)&HR, (uint16_t)4, HAL_MAX_DELAY);
+			unsigned long t1;
+			unsigned long t2 = DWT->CYCCNT;
+			unsigned long diff = t2 - t1;
+			float time = (float)diff*1000/(float)110000000;
+			HAL_UART_Transmit(&hlpuart1, (uint8_t*)&time, (uint16_t)4, HAL_MAX_DELAY);
+			t1 = DWT->CYCCNT;
 		}
 	}
 }
