@@ -59,6 +59,10 @@ void Error_Handler(void);
 #define INTB_Pin GPIO_PIN_3
 #define INTB_GPIO_Port GPIOF
 #define INTB_EXTI_IRQn EXTI3_IRQn
+#define Red_led_Pin GPIO_PIN_9
+#define Red_led_GPIO_Port GPIOA
+#define Blue_led_Pin GPIO_PIN_7
+#define Blue_led_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

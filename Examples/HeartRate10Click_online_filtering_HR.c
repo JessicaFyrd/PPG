@@ -23,20 +23,16 @@
 #include "DSP.h"
 #include "Board.h"
 
-//UART
-extern UART_HandleTypeDef hlpuart1;
-
-//1s Flag
-extern uint8_t flag_filter;
-
-//Heart Rate calculation PV
-float32_t HR = 0;
-
 int main(void)
 {
 	STM_INIT();
 	SENSOR_2LED_INIT();
 	DSP_INIT();
+
+//	//Enable the cycle counter to check duration
+//	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+//	DWT->CYCCNT = 0;
+//	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
 	while (1)
 	{
@@ -44,11 +40,7 @@ int main(void)
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);	// Set the Output (LED) Pin (Red) low to see the end of the interruption
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);		// Set the Output (LED) Pin (Blue) high to see the main
 
-		//Filtration that happen when the define number of samples has been reached (=> flag_filter = 1)
-		if (flag_filter == 1)
-		{
-			HR = HEART_RATE_CALCULATION();
-			HAL_UART_Transmit(&hlpuart1, (uint8_t*)&HR, (uint16_t)4, HAL_MAX_DELAY);
-		}
+		//Heart Rate
+		HEART_RATE_CALCULATION();
 	}
 }

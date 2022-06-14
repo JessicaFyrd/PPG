@@ -14,6 +14,16 @@
 #include "Board.h"
 
 
+//Time verification ==================================================================================================================================
+unsigned long CPU_frequency = 48000000;
+unsigned long t1, t2, diff;
+float duration_ms;
+
+
+
+//Value verification =================================================================================================================================
+extern UART_HandleTypeDef hlpuart1;
+
 
 
 /*==================================================================================================================================================*/
@@ -22,7 +32,7 @@
 
 
 //Variables ==========================================================================================================================================
-data_2leds_TypeDef data;								//Data which contains 2 uint32 variables, one for each led
+data_2leds_TypeDef data_2leds;						//Data which contains 2 uint32 variables, one for each led
 uint8_t rd_dat = 0;
 uint8_t number_available_samples = 0;
 uint16_t i = 0;
@@ -30,7 +40,6 @@ uint8_t j = 0;
 uint8_t flag_filter = 0;
 uint32_t block_size = BLOCK_SIZE;
 uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;			//Number of blocks to have all the samples in data_1s_ir when filtering BLOCK_SIZE samples at a time
-extern UART_HandleTypeDef hlpuart1;
 
 
 //Buffers ============================================================================================================================================
@@ -44,6 +53,18 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 	if(GPIO_Pin == GPIO_PIN_3) 													// If The INT Source Is EXTI Line3
 	{
 		ACQUISITION_BY_BLOCKSIZE();
+
+/*========Time verification========*/
+//		//End time
+//		t2 = DWT->CYCCNT;
+//
+//		//Calculate duration
+//		diff = t2 - t1;
+//		duration_ms = (float)((float)diff/(float)CPU_frequency)*1000;
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&duration_ms, (uint16_t)4, HAL_MAX_DELAY);
+//
+//		//Beginning time
+//		t1 = DWT->CYCCNT;
 	}
 }
 
@@ -59,14 +80,16 @@ dsp_return_value_t ACQUISITION_BY_BLOCKSIZE(void)
 	READ(HEARTRATE10_REG_INT_STATUS, &rd_dat);
 	for(i=0;i<block_size;i++)
 	{
-		HEARTRATE10_READ_2LEDS_FIFO_DATA(&data);
-//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data, 8, 1000);
-		data_1s_ir[i+j*block_size]=(float32_t)data.ir;									//Stock IR data on the IR buffer until the define number of samples has been reached
+		HEARTRATE10_READ_2LEDS_FIFO_DATA(&data_2leds);
+		data_1s_ir[i+j*block_size]=(float32_t)data_2leds.ir*(-1);					//Stock IR data on the IR buffer until the define number of samples has been reached
+		data_1s_red[i+j*block_size]=(float32_t)data_2leds.red*(-1);				//Stock red data on the IR buffer until the define number of samples has been reached
+
+
+/*=======Values verification=======*/
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_2leds, 8, 1000);
 //		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_1s_ir[i+j*block_size], 4, 1000);
-		data_1s_red[i+j*block_size]=(float32_t)data.red;									//Stock red data on the IR buffer until the define number of samples has been reached
 //		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_1s_red[i+j*block_size], 4, 1000);
 	}
-//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&j, 1, 1000);
 
 	//Counter
 	j++;
@@ -99,7 +122,7 @@ float32_t data_1s_red_filtered[LENGTH_DATA] = {0};				//Filter red data buffer
 arm_biquad_cascade_df2T_instance_f32 S_ir, S_red;				//Type that contains the number of stages, a pointer to the buffer with coefficients and a pointer to the state
 
 
-//Initialisation =====================================================================================================================================
+//Initialization =====================================================================================================================================
 dsp_return_value_t DSP_INIT(void)
 {
 	arm_biquad_cascade_df2T_init_f32(&S_ir,(uint8_t)NUMBER_STAGE,(const float32_t *)&iirCoeffs32[0], (float32_t *)&iirStateF32_ir[0]);
@@ -115,6 +138,8 @@ dsp_return_value_t IIR_FILTER(void)
 	arm_biquad_cascade_df2T_f32(&S_ir, data_1s_ir, data_1s_ir_filtered, LENGTH_DATA);					//Filter IR data by blocks of LENGTH_DATA
 	arm_biquad_cascade_df2T_f32(&S_red, data_1s_red, data_1s_red_filtered, LENGTH_DATA);				//Filter red data by blocks of LENGTH_DATA
 
+
+/*=======Values verification=======*/
 //	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_1s_ir, (uint16_t)4*LENGTH_DATA, 1000);
 //	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_1s_red, (uint16_t)4*LENGTH_DATA, 1000);
 //	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_1s_ir_filtered, (uint16_t)4*LENGTH_DATA, 1000);
@@ -152,6 +177,8 @@ dsp_return_value_t ROLL_BUFFER(void)
 	//Add a LENGTH_DATA size block on the right (add a new second of data)
 	memcpy(&data_10s_ir[9*LENGTH_DATA],data_1s_ir_filtered,LENGTH_DATA*4);
 
+
+/*=======Values verification=======*/
 	//UART Transmission
 //	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_10s_ir[9*LENGTH_DATA], (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);
 //	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_10s_ir, (uint16_t)4*LENGTH_DATA_10s, HAL_MAX_DELAY);
@@ -169,37 +196,54 @@ dsp_return_value_t AUTO_CORRELATION(void)
 
 float32_t HEART_RATE_CALCULATION(void)
 {
-	//Filter
-	IIR_FILTER();
-
-	//Delete the older second and add the new one (filtered data)
-	ROLL_BUFFER();
-
-	//Re-initialize variables
-	j = 0;
-	flag_filter = 0;
-	max_y = 0;
-	max_x = 0;
-
-	//Heart Rate calculation
-	AUTO_CORRELATION();
-
-	//Maximum search for the second half with a little shift to erase the first pic
-	for(i = (LENGTH_DATA_10s+SHIFT); i < (2*LENGTH_DATA_10s-1); i++)
+	if (flag_filter == 1) //Calculation happen when the define number of samples has been reached (=> flag_filter = 1)
 	{
-		if (auto_corr[i]>max_y)
+		//Filter
+		IIR_FILTER();
+
+		//Delete the older second and add the new one (filtered data)
+		ROLL_BUFFER();
+
+		//Re-initialize variables
+		j = 0;
+		flag_filter = 0;
+		max_y = 0;
+		max_x = 0;
+
+		//Heart Rate calculation
+		AUTO_CORRELATION();
+
+		//Maximum search for the second half with a little shift to erase the first pic
+		for(i = (LENGTH_DATA_10s+SHIFT); i < (2*LENGTH_DATA_10s-1); i++)
 		{
-		  max_y = auto_corr[i];
-		  max_x = i+SHIFT-LENGTH_DATA_10s;
+			if (auto_corr[i]>max_y)
+			{
+			  max_y = auto_corr[i];
+			  max_x = i+SHIFT-LENGTH_DATA_10s;
+			}
 		}
+
+		//Heart rate calculation
+		Heart_Rate = (float32_t)((LENGTH_DATA * 60) / max_x);
+
+
+/*=======Values verification=======*/
+		//UART Transmission
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&max_x, (uint16_t)2, HAL_MAX_DELAY);
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&Heart_Rate, (uint16_t)4, HAL_MAX_DELAY);
+
+/*========Time verification========*/
+		//End time
+//		t2 = DWT->CYCCNT;
+//
+//		//Calculate duration
+//		diff = t2 - t1;
+//		duration_ms = (float)((float)diff/(float)CPU_frequency)*1000;
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&duration_ms, (uint16_t)4, HAL_MAX_DELAY);
+//
+//		//Beginning time
+//		t1 = DWT->CYCCNT;
 	}
-
-	//Heart rate calculation
-	Heart_Rate = (float32_t)((LENGTH_DATA * 60) / max_x);
-
-	//UART Transmission
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&max_x, (uint16_t)2, HAL_MAX_DELAY);
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&Heart_Rate, (uint16_t)4, HAL_MAX_DELAY);
 
 	return Heart_Rate;
 }
