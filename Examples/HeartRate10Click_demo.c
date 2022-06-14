@@ -130,7 +130,7 @@ int main(void)
 //		  HEARTRATE10_READ_COMPLETE_FIFO_DATA(&data_4leds);
 //		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_4leds, 16, 1000);
 		  //2 Leds read and transmit data via UART
-		  heartrate10_read_2leds_fifo_data(&data_2leds);
+		  HEARTRATE10_READ_2LEDS_FIFO_DATA(&data_2leds);
 		  HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_2leds, 8, 1000);
 	  }
 
