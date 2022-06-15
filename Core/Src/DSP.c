@@ -1,106 +1,11 @@
-/*
- * DSP.c
- *
- *  Created on: 10 Jun 2022
- *      Author: Jessica Fayard
- */
-
-
 //Includes ===========================================================================================================================================
 #include "DSP.h"
 #include "arm_math.h"
 #include "string.h"
-#include "MAX86916_ppg.h"
-#include "Board.h"
-
-
-//Time verification ==================================================================================================================================
-unsigned long CPU_frequency = 48000000;
-unsigned long t1, t2, diff;
-float duration_ms;
-
 
 
 //Value verification =================================================================================================================================
 extern UART_HandleTypeDef hlpuart1;
-
-
-
-/*==================================================================================================================================================*/
-/*=================================================================Acquisition=======================================================================*/
-/*==================================================================================================================================================*/
-
-
-//Variables ==========================================================================================================================================
-data_2leds_TypeDef data_2leds;									//Data which contains 2 uint32 variables, one for each led
-uint8_t rd_dat = 0;
-uint8_t number_available_samples = 0;
-uint16_t i = 0;
-static uint8_t j = 0;
-static uint8_t flag_filter = 0;
-uint32_t block_size = BLOCK_SIZE;
-uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;					//Number of blocks to have all the samples in data_1s_ir when filtering BLOCK_SIZE samples at a time
-
-
-//Buffers ============================================================================================================================================
-float32_t data_1s_ir[LENGTH_DATA] = {0};						//1 second IR buffer
-float32_t data_1s_red[LENGTH_DATA] = {0};						//1 second red buffer
-
-
-//Functions ==========================================================================================================================================
-void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
-{
-	if(GPIO_Pin == GPIO_PIN_3) 									// If The INT Source Is EXTI Line3
-	{
-		ACQUISITION_BY_BLOCKSIZE();
-
-/*========Time verification========*/
-//		//End time
-//		t2 = DWT->CYCCNT;
-//
-//		//Calculate duration
-//		diff = t2 - t1;
-//		duration_ms = (float)((float)diff/(float)CPU_frequency)*1000;
-//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&duration_ms, (uint16_t)4, HAL_MAX_DELAY);
-//
-//		//Beginning time
-//		t1 = DWT->CYCCNT;
-	}
-}
-
-dsp_return_value_t ACQUISITION_BY_BLOCKSIZE(void)
-{
-	//LEDs
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET); 			// Set the Output (LED) Pin (Red) high to see the interrupt
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
-
-	//Data ACQUISITION_BY_BLOCKSIZE
-//	number_available_samples=HEARTRATE10_NUMBER_AVAILABLE_SAMPLES();
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&number_available_samples, 1, 1000);
-	READ(HEARTRATE10_REG_INT_STATUS, &rd_dat);
-	for(i=0;i<block_size;i++)
-	{
-		HEARTRATE10_READ_2LEDS_FIFO_DATA(&data_2leds);
-		data_1s_ir[i+j*block_size]=(float32_t)data_2leds.ir*(-1);	//Stock IR data on the IR buffer until the define number of samples has been reached
-		data_1s_red[i+j*block_size]=(float32_t)data_2leds.red*(-1);				//Stock red data on the IR buffer until the define number of samples has been reached
-
-
-/*=======Values verification=======*/
-//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_2leds, 8, 1000);
-//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_1s_ir[i+j*block_size], 4, 1000);
-//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_1s_red[i+j*block_size], 4, 1000);
-	}
-
-	//Counter
-	j++;
-	if (j == numBlocks)												//When LENGTH_DATA data have been acquired
-	{
-		flag_filter = 1;
-	}
-
-	return DSP_OK;
-}
-
 
 
 
@@ -110,19 +15,24 @@ dsp_return_value_t ACQUISITION_BY_BLOCKSIZE(void)
 
 
 //Buffers ============================================================================================================================================
-static float32_t iirStateF32_ir[2*NUMBER_STAGE] = {0};				//State IR buffer
-static float32_t iirStateF32_red[2*NUMBER_STAGE] = {0};				//State red buffer
-const float32_t iirCoeffs32[NUMBER_COEFS] =							//Coefficients buffer
+static float32_t iirStateF32_ir[2*NUMBER_STAGE] = {0};			//State IR buffer
+static float32_t iirStateF32_red[2*NUMBER_STAGE] = {0};			//State red buffer
+const float32_t iirCoeffs32[NUMBER_COEFS] =						//Coefficients buffer
 {
-		0.1245,         0,   -0.1245,    1.7492,    -0.7509 		//b0 b1 b2 a1 a2 -->Matlab coefficient with erasing a0 which is 1 and inverted the a signs
+		0.1245,         0,   -0.1245,    1.7492,    -0.7509 	//b0 b1 b2 a1 a2 -->Matlab coefficient with erasing a0 which is 1 and inverted the a signs
 };
+
+float32_t data_1s_ir[LENGTH_DATA] = {0};						//1 second IR buffer
+float32_t data_1s_red[LENGTH_DATA] = {0};						//1 second red buffer
 float32_t data_1s_ir_filtered[LENGTH_DATA] = {0};					//Filter IR data buffer
-float32_t data_1s_red_filtered[LENGTH_DATA] = {0};					//Filter red data buffer
+float32_t data_1s_red_filtered[LENGTH_DATA] = {0};
+float32_t data_10s_ir_filtered[LENGTH_DATA_10s] = {0};			//10 seconds IR buffer
+float32_t data_10s_red_filtered[LENGTH_DATA_10s] = {0};			//10 seconds IR buffer
 
-arm_biquad_cascade_df2T_instance_f32 S_ir, S_red;					//Type that contains the number of stages, a pointer to the buffer with coefficients and a pointer to the state
+arm_biquad_cascade_df2T_instance_f32 S_ir, S_red;				//Type that contains the number of stages, a pointer to the buffer with coefficients and a pointer to the state
 
 
-//Initialization =====================================================================================================================================
+//Initialisation =====================================================================================================================================
 dsp_return_value_t DSP_INIT(void)
 {
 	arm_biquad_cascade_df2T_init_f32(&S_ir,(uint8_t)NUMBER_STAGE,(const float32_t *)&iirCoeffs32[0], (float32_t *)&iirStateF32_ir[0]);
@@ -157,13 +67,15 @@ dsp_return_value_t IIR_FILTER(void)
 
 
 //Variables ==========================================================================================================================================
-uint16_t max_x = 0;												//The max is the number of points, 2000 here so 16 bits is enough
-uint64_t max_y = 0; 											//In Matlab, the max is about 4,5.10^9 so 32 bits is too short
+uint16_t max_x = 0;										//The max is the number of points, 2000 here so 16 bits is enough
+uint64_t max_y = 0; 									//In Matlab, the max is about 4,5.10^9 so 32 bits is too short
 float32_t Heart_Rate = 0;
+uint16_t i = 0;
+uint8_t j = 0;
+uint8_t flag_filter;
 
 
 //Buffers ============================================================================================================================================
-float32_t data_10s_ir_filtered[LENGTH_DATA_10s] = {0};			//10 seconds IR buffer
 float32_t auto_corr[2*LENGTH_DATA_10s-1] = {0};					//Autocorrelation buffer
 
 

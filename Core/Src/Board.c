@@ -44,11 +44,7 @@ board_return_value_t STM_INIT(void)
 	MX_ICACHE_Init();
 	MX_RTC_Init();
 
-	return BOARD_OK;
-}
-
-board_return_value_t SENSOR_2LED_INIT(void)
-{
+	//Sensor init
 	err_t = HEARTRATE10_DEFAULT_2LEDS_CFG(hi2c2);
 	if (err_t!=0)
 	{
@@ -375,10 +371,6 @@ static void MX_GPIO_Init(void)
 
 }
 
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
@@ -410,3 +402,4 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
