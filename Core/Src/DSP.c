@@ -32,14 +32,14 @@ extern UART_HandleTypeDef hlpuart1;
 
 
 //Variables ==========================================================================================================================================
-data_2leds_TypeDef data_2leds;						//Data which contains 2 uint32 variables, one for each led
+data_2leds_TypeDef data_2leds;									//Data which contains 2 uint32 variables, one for each led
 uint8_t rd_dat = 0;
 uint8_t number_available_samples = 0;
 uint16_t i = 0;
-uint8_t j = 0;
-uint8_t flag_filter = 0;
+static uint8_t j = 0;
+static uint8_t flag_filter = 0;
 uint32_t block_size = BLOCK_SIZE;
-uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;			//Number of blocks to have all the samples in data_1s_ir when filtering BLOCK_SIZE samples at a time
+uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;					//Number of blocks to have all the samples in data_1s_ir when filtering BLOCK_SIZE samples at a time
 
 
 //Buffers ============================================================================================================================================
@@ -50,7 +50,7 @@ float32_t data_1s_red[LENGTH_DATA] = {0};						//1 second red buffer
 //Functions ==========================================================================================================================================
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
-	if(GPIO_Pin == GPIO_PIN_3) 													// If The INT Source Is EXTI Line3
+	if(GPIO_Pin == GPIO_PIN_3) 									// If The INT Source Is EXTI Line3
 	{
 		ACQUISITION_BY_BLOCKSIZE();
 
@@ -71,7 +71,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 dsp_return_value_t ACQUISITION_BY_BLOCKSIZE(void)
 {
 	//LEDs
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET); 					// Set the Output (LED) Pin (Red) high to see the interrupt
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET); 			// Set the Output (LED) Pin (Red) high to see the interrupt
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
 
 	//Data ACQUISITION_BY_BLOCKSIZE
@@ -81,7 +81,7 @@ dsp_return_value_t ACQUISITION_BY_BLOCKSIZE(void)
 	for(i=0;i<block_size;i++)
 	{
 		HEARTRATE10_READ_2LEDS_FIFO_DATA(&data_2leds);
-		data_1s_ir[i+j*block_size]=(float32_t)data_2leds.ir*(-1);					//Stock IR data on the IR buffer until the define number of samples has been reached
+		data_1s_ir[i+j*block_size]=(float32_t)data_2leds.ir*(-1);	//Stock IR data on the IR buffer until the define number of samples has been reached
 		data_1s_red[i+j*block_size]=(float32_t)data_2leds.red*(-1);				//Stock red data on the IR buffer until the define number of samples has been reached
 
 
@@ -93,7 +93,7 @@ dsp_return_value_t ACQUISITION_BY_BLOCKSIZE(void)
 
 	//Counter
 	j++;
-	if (j == numBlocks)			//When LENGTH_DATA data have been acquired
+	if (j == numBlocks)												//When LENGTH_DATA data have been acquired
 	{
 		flag_filter = 1;
 	}
@@ -110,16 +110,16 @@ dsp_return_value_t ACQUISITION_BY_BLOCKSIZE(void)
 
 
 //Buffers ============================================================================================================================================
-static float32_t iirStateF32_ir[2*NUMBER_STAGE] = {0};			//State IR buffer
-static float32_t iirStateF32_red[2*NUMBER_STAGE] = {0};			//State red buffer
-const float32_t iirCoeffs32[NUMBER_COEFS] =						//Coefficients buffer
+static float32_t iirStateF32_ir[2*NUMBER_STAGE] = {0};				//State IR buffer
+static float32_t iirStateF32_red[2*NUMBER_STAGE] = {0};				//State red buffer
+const float32_t iirCoeffs32[NUMBER_COEFS] =							//Coefficients buffer
 {
-		0.1245,         0,   -0.1245,    1.7492,    -0.7509 	//b0 b1 b2 a1 a2 -->Matlab coefficient with erasing a0 which is 1 and inverted the a signs
+		0.1245,         0,   -0.1245,    1.7492,    -0.7509 		//b0 b1 b2 a1 a2 -->Matlab coefficient with erasing a0 which is 1 and inverted the a signs
 };
-float32_t data_1s_ir_filtered[LENGTH_DATA] = {0};				//Filter IR data buffer
-float32_t data_1s_red_filtered[LENGTH_DATA] = {0};				//Filter red data buffer
+float32_t data_1s_ir_filtered[LENGTH_DATA] = {0};					//Filter IR data buffer
+float32_t data_1s_red_filtered[LENGTH_DATA] = {0};					//Filter red data buffer
 
-arm_biquad_cascade_df2T_instance_f32 S_ir, S_red;				//Type that contains the number of stages, a pointer to the buffer with coefficients and a pointer to the state
+arm_biquad_cascade_df2T_instance_f32 S_ir, S_red;					//Type that contains the number of stages, a pointer to the buffer with coefficients and a pointer to the state
 
 
 //Initialization =====================================================================================================================================
@@ -157,14 +157,13 @@ dsp_return_value_t IIR_FILTER(void)
 
 
 //Variables ==========================================================================================================================================
-uint16_t max_x = 0;										//The max is the number of points, 2000 here so 16 bits is enough
-uint64_t max_y = 0; 									//In Matlab, the max is about 4,5.10^9 so 32 bits is too short
+uint16_t max_x = 0;												//The max is the number of points, 2000 here so 16 bits is enough
+uint64_t max_y = 0; 											//In Matlab, the max is about 4,5.10^9 so 32 bits is too short
 float32_t Heart_Rate = 0;
 
 
 //Buffers ============================================================================================================================================
-float32_t data_10s_ir[LENGTH_DATA_10s] = {0};					//10 seconds IR buffer
-float32_t data_10s_red[LENGTH_DATA_10s] = {0};					//10 seconds red buffer
+float32_t data_10s_ir_filtered[LENGTH_DATA_10s] = {0};			//10 seconds IR buffer
 float32_t auto_corr[2*LENGTH_DATA_10s-1] = {0};					//Autocorrelation buffer
 
 
@@ -172,23 +171,24 @@ float32_t auto_corr[2*LENGTH_DATA_10s-1] = {0};					//Autocorrelation buffer
 dsp_return_value_t ROLL_BUFFER(void)
 {
 	//Shift a LENGTH_DATA size block to the left (erasing the 1st second of data)
-	memcpy(&data_10s_ir[0],&data_10s_ir[LENGTH_DATA],9*LENGTH_DATA*4); //Memory copy in the 1st argument from the second with the size in 3rd argument (in bytes)
+	memcpy(&data_10s_ir_filtered[0],&data_10s_ir_filtered[LENGTH_DATA],(LENGTH_DATA_10s-LENGTH_DATA)*4); //Memory copy in the 1st argument from the second with the size in 3rd argument (in bytes)
 
 	//Add a LENGTH_DATA size block on the right (add a new second of data)
-	memcpy(&data_10s_ir[9*LENGTH_DATA],data_1s_ir_filtered,LENGTH_DATA*4);
+	memcpy(&data_10s_ir_filtered[(LENGTH_DATA_10s-LENGTH_DATA)],data_1s_ir_filtered,LENGTH_DATA*4);
 
 
 /*=======Values verification=======*/
 	//UART Transmission
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_10s_ir[9*LENGTH_DATA], (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_10s_ir, (uint16_t)4*LENGTH_DATA_10s, HAL_MAX_DELAY);
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_10s_ir_filtered[(LENGTH_DATA_10s-LENGTH_DATA)], (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_10s_ir_filtered, (uint16_t)4*LENGTH_DATA_10s, HAL_MAX_DELAY);
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_1s_ir_filtered, (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);
 
 	return DSP_OK;
 }
 
 dsp_return_value_t AUTO_CORRELATION(void)
 {
-	arm_correlate_f32((const float32_t *) data_10s_ir, (uint32_t) LENGTH_DATA_10s, (const float32_t *) data_10s_ir, (uint32_t) LENGTH_DATA_10s, (float32_t *) auto_corr);
+	arm_correlate_f32((const float32_t *) data_10s_ir_filtered, (uint32_t) LENGTH_DATA_10s, (const float32_t *) data_10s_ir_filtered, (uint32_t) LENGTH_DATA_10s, (float32_t *) auto_corr);
 //	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&auto_corr, (uint16_t)4*(2*LENGTH_DATA_10s-1), HAL_MAX_DELAY);
 
 	return DSP_OK;

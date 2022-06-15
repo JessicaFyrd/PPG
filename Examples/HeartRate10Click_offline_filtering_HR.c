@@ -62,7 +62,7 @@ PCD_HandleTypeDef hpcd_USB_FS;
 //Data ACQUISITION_BY_BLOCKSIZE PV
 extern float32_t data_ir[LENGTH_WHOLE_DATA];		//All the offline raw data stocked in an other .c
 float32_t block_data_ir[LENGTH_DATA] = {0};			//Buffer which simulate the buffer on which the data will be stocked in the online mode
-float32_t data_10s_ir[LENGTH_DATA_10s] = {0};
+float32_t data_10s_ir_filtered[LENGTH_DATA_10s] = {0};
 uint8_t rd_dat = 0;
 
 //Filter PV
@@ -168,22 +168,22 @@ int main(void)
 		}
 
 		//Shift a LENGTH_DATA size block to the left (erasing the 1st second of data)
-		memcpy(&data_10s_ir[0],&data_10s_ir[LENGTH_DATA],9*LENGTH_DATA*4); //Memory copy in the 1st argument from the second with the size in 3rd argument (in bytes)
+		memcpy(&data_10s_ir_filtered[0],&data_10s_ir_filtered[LENGTH_DATA],9*LENGTH_DATA*4); //Memory copy in the 1st argument from the second with the size in 3rd argument (in bytes)
 
 		//Filter
 		IIR_FILTER();
 
 		//Add a LENGTH_DATA size block on the right (add a new second of data)
-		memcpy(&data_10s_ir[9*LENGTH_DATA],testOutput_ir,LENGTH_DATA*4);
-//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_10s_ir, (uint16_t)4*LENGTH_DATA_10s, HAL_MAX_DELAY);
-//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_10s_ir[9*LENGTH_DATA], (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);
+		memcpy(&data_10s_ir_filtered[9*LENGTH_DATA],testOutput_ir,LENGTH_DATA*4);
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_10s_ir_filtered, (uint16_t)4*LENGTH_DATA_10s, HAL_MAX_DELAY);
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_10s_ir_filtered[9*LENGTH_DATA], (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);
 
 		//Re-initialize variables
 		max_y = 0;
 		max_x = 0;
 
 		//Heart Rate calculation
-		arm_correlate_f32((const float32_t *) data_10s_ir, (uint32_t) LENGTH_DATA_10s, (const float32_t *) data_10s_ir, (uint32_t) LENGTH_DATA_10s, (float32_t *) auto_corr);
+		arm_correlate_f32((const float32_t *) data_10s_ir_filtered, (uint32_t) LENGTH_DATA_10s, (const float32_t *) data_10s_ir_filtered, (uint32_t) LENGTH_DATA_10s, (float32_t *) auto_corr);
 //		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&auto_corr, (uint16_t)4*(2*LENGTH_DATA_10s-1), HAL_MAX_DELAY);
 		memcpy(auto_corr_extract,&auto_corr[LENGTH_DATA_10s+SHIFT],(LENGTH_DATA_10s-1-SHIFT)*4);
 
