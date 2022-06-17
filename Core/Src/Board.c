@@ -44,7 +44,11 @@ board_return_value_t STM_INIT(void)
 	MX_ICACHE_Init();
 	MX_RTC_Init();
 
-	//Sensor init
+	return BOARD_OK;
+}
+
+board_return_value_t SENSOR_2LED_INIT(void)
+{
 	err_t = HEARTRATE10_DEFAULT_2LEDS_CFG(hi2c2);
 	if (err_t!=0)
 	{
@@ -53,7 +57,6 @@ board_return_value_t STM_INIT(void)
 
 	return BOARD_OK;
 }
-
 
 
 //Functions  ==========================================================================================================================================

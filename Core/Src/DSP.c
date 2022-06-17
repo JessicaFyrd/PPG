@@ -1,17 +1,23 @@
 //Includes ===========================================================================================================================================
 #include "DSP.h"
-#include "arm_math.h"
-#include "string.h"
 
 
 //Value verification =================================================================================================================================
 extern UART_HandleTypeDef hlpuart1;
 
 
-
-/*==================================================================================================================================================*/
-/*=================================================================Filtration=======================================================================*/
-/*==================================================================================================================================================*/
+//Variables ==========================================================================================================================================
+data_2leds_TypeDef data_2leds;							//Data which contains 2 uint32 variables, one for each led
+uint8_t rd_dat = 0;
+uint8_t number_available_samples = 0;
+uint16_t i = 0;
+uint8_t j = 0;
+uint8_t flag_filter = 0;
+uint32_t block_size = BLOCK_SIZE;
+uint32_t numBlocks = LENGTH_DATA/BLOCK_SIZE;			//Number of blocks to have all the samples in data_1s_ir when filtering BLOCK_SIZE samples at a time
+uint16_t max_x = 0;										//The max is the number of points, 2000 here so 16 bits is enough
+uint64_t max_y = 0; 									//In Matlab, the max is about 4,5.10^9 so 32 bits is too short
+float32_t Heart_Rate = 0;
 
 
 //Buffers ============================================================================================================================================
@@ -24,15 +30,86 @@ const float32_t iirCoeffs32[NUMBER_COEFS] =						//Coefficients buffer
 
 float32_t data_1s_ir[LENGTH_DATA] = {0};						//1 second IR buffer
 float32_t data_1s_red[LENGTH_DATA] = {0};						//1 second red buffer
-float32_t data_1s_ir_filtered[LENGTH_DATA] = {0};					//Filter IR data buffer
+float32_t data_1s_ir_filtered[LENGTH_DATA] = {0};				//Filter IR data buffer
 float32_t data_1s_red_filtered[LENGTH_DATA] = {0};
 float32_t data_10s_ir_filtered[LENGTH_DATA_10s] = {0};			//10 seconds IR buffer
 float32_t data_10s_red_filtered[LENGTH_DATA_10s] = {0};			//10 seconds IR buffer
+float32_t auto_corr[2*LENGTH_DATA_10s-1] = {0};					//Autocorrelation buffer
 
+
+//Filter
 arm_biquad_cascade_df2T_instance_f32 S_ir, S_red;				//Type that contains the number of stages, a pointer to the buffer with coefficients and a pointer to the state
 
 
-//Initialisation =====================================================================================================================================
+
+
+/*==================================================================================================================================================*/
+/*=================================================================Acquisition=======================================================================*/
+/*==================================================================================================================================================*/
+//Functions ==========================================================================================================================================
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == GPIO_PIN_3) 									// If The INT Source Is EXTI Line3
+	{
+		ACQUISITION_BY_BLOCKSIZE();
+
+/*========Time verification========*/
+//		//End time
+//		t2 = DWT->CYCCNT;
+//
+//		//Calculate duration
+//		diff = t2 - t1;
+//		duration_ms = (float)((float)diff/(float)CPU_frequency)*1000;
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&duration_ms, (uint16_t)4, HAL_MAX_DELAY);
+//
+//		//Beginning time
+//		t1 = DWT->CYCCNT;
+	}
+}
+
+dsp_return_value_t ACQUISITION_BY_BLOCKSIZE(void)
+{
+	//Red LED
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+
+	//Data ACQUISITION_BY_BLOCKSIZE
+//	number_available_samples=HEARTRATE10_NUMBER_AVAILABLE_SAMPLES();
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&number_available_samples, 1, 1000);
+	READ(HEARTRATE10_REG_INT_STATUS, &rd_dat);
+	for(i=0;i<block_size;i++)
+	{
+		HEARTRATE10_READ_2LEDS_FIFO_DATA(&data_2leds);
+		data_1s_ir[i+j*block_size]=(float32_t)data_2leds.ir*(-1);	//Stock IR data on the IR buffer until the define number of samples has been reached
+		data_1s_red[i+j*block_size]=(float32_t)data_2leds.red*(-1);				//Stock red data on the IR buffer until the define number of samples has been reached
+
+
+/*=======Values verification=======*/
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_2leds, 8, 1000);
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_1s_ir[i+j*block_size], 4, 1000);
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_1s_red[i+j*block_size], 4, 1000);
+	}
+
+	//Counter
+	j++;
+	if (j == numBlocks)												//When LENGTH_DATA data have been acquired
+	{
+		flag_filter = 1;
+	}
+
+	//Red LED
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+
+
+	return DSP_OK;
+}
+
+
+
+
+/*==================================================================================================================================================*/
+/*=================================================================Filtration=======================================================================*/
+/*==================================================================================================================================================*/
+//Initialization =====================================================================================================================================
 dsp_return_value_t DSP_INIT(void)
 {
 	arm_biquad_cascade_df2T_init_f32(&S_ir,(uint8_t)NUMBER_STAGE,(const float32_t *)&iirCoeffs32[0], (float32_t *)&iirStateF32_ir[0]);
@@ -64,21 +141,6 @@ dsp_return_value_t IIR_FILTER(void)
 /*==================================================================================================================================================*/
 /*=============================================================Heart rate Calculation===============================================================*/
 /*==================================================================================================================================================*/
-
-
-//Variables ==========================================================================================================================================
-uint16_t max_x = 0;										//The max is the number of points, 2000 here so 16 bits is enough
-uint64_t max_y = 0; 									//In Matlab, the max is about 4,5.10^9 so 32 bits is too short
-float32_t Heart_Rate = 0;
-uint16_t i = 0;
-uint8_t j = 0;
-uint8_t flag_filter;
-
-
-//Buffers ============================================================================================================================================
-float32_t auto_corr[2*LENGTH_DATA_10s-1] = {0};					//Autocorrelation buffer
-
-
 //Functions ==========================================================================================================================================
 dsp_return_value_t ROLL_BUFFER(void)
 {
@@ -92,7 +154,7 @@ dsp_return_value_t ROLL_BUFFER(void)
 /*=======Values verification=======*/
 	//UART Transmission
 //	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_10s_ir_filtered[(LENGTH_DATA_10s-LENGTH_DATA)], (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_10s_ir_filtered, (uint16_t)4*LENGTH_DATA_10s, HAL_MAX_DELAY);
+	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_10s_ir_filtered, (uint16_t)4*LENGTH_DATA_10s, HAL_MAX_DELAY);
 //	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_1s_ir_filtered, (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);
 
 	return DSP_OK;
@@ -110,6 +172,9 @@ float32_t HEART_RATE_CALCULATION(void)
 {
 	if (flag_filter == 1) //Calculation happen when the define number of samples has been reached (=> flag_filter = 1)
 	{
+		//Blue LED
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+
 		//Filter
 		IIR_FILTER();
 
@@ -157,5 +222,9 @@ float32_t HEART_RATE_CALCULATION(void)
 //		t1 = DWT->CYCCNT;
 	}
 
+	//Blue LED
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
+
 	return Heart_Rate;
 }
+
