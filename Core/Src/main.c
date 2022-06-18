@@ -30,6 +30,11 @@ int main(void)
   SENSOR_2LED_INIT();
   DSP_INIT();
 
+//  //Enable the cycle counter to check duration
+//  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+//  DWT->CYCCNT = 0;
+//  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
   while (1)
   {
 	  HEART_RATE_CALCULATION();

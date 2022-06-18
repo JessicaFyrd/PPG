@@ -207,7 +207,7 @@ float32_t HEART_RATE_CALCULATION(void)
 /*=======Values verification=======*/
 		//UART Transmission
 //		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&max_x, (uint16_t)2, HAL_MAX_DELAY);
-		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&Heart_Rate, (uint16_t)4, HAL_MAX_DELAY);
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&Heart_Rate, (uint16_t)4, HAL_MAX_DELAY);
 
 /*========Time verification========*/
 		//End time
