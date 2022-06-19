@@ -28,12 +28,14 @@ const float32_t iirCoeffs32[NUMBER_COEFS] =						//Coefficients buffer
 		0.1245,         0,   -0.1245,    1.7492,    -0.7509 	//b0 b1 b2 a1 a2 -->Matlab coefficient with erasing a0 which is 1 and inverted the a signs
 };
 
-float32_t data_1s_ir[LENGTH_DATA] = {0};						//1 second IR buffer
-float32_t data_1s_red[LENGTH_DATA] = {0};						//1 second red buffer
-float32_t data_1s_ir_filtered[LENGTH_DATA] = {0};				//Filter IR data buffer
-float32_t data_1s_red_filtered[LENGTH_DATA] = {0};
-float32_t data_10s_ir_filtered[LENGTH_DATA_10s] = {0};			//10 seconds IR buffer
-float32_t data_10s_red_filtered[LENGTH_DATA_10s] = {0};			//10 seconds IR buffer
+float32_t data_1s_ir[LENGTH_DATA] = {0};						//1 second IR data buffer
+float32_t data_1s_red[LENGTH_DATA] = {0};						//1 second red data buffer
+float32_t data_1s_ir_filtered[LENGTH_DATA] = {0};				//Filter IR data 1s buffer
+float32_t data_1s_red_filtered[LENGTH_DATA] = {0};				//Filter red data 1s buffer
+float32_t data_10s_ir[LENGTH_DATA_10s] = {0};					//10 seconds IR data buffer
+float32_t data_10s_red[LENGTH_DATA_10s] = {0};					//10 seconds red data buffer
+float32_t data_10s_ir_filtered[LENGTH_DATA_10s] = {0};			//10 seconds IR filtered buffer
+float32_t data_10s_red_filtered[LENGTH_DATA_10s] = {0};			//10 seconds red filtered buffer
 float32_t auto_corr[2*LENGTH_DATA_10s-1] = {0};					//Autocorrelation buffer
 
 
@@ -142,20 +144,20 @@ dsp_return_value_t IIR_FILTER(void)
 /*=============================================================Heart rate Calculation===============================================================*/
 /*==================================================================================================================================================*/
 //Functions ==========================================================================================================================================
-dsp_return_value_t ROLL_BUFFER(void)
+dsp_return_value_t ROLL_BUFFER(float32_t *input_buffer, float32_t *output_buffer)
 {
 	//Shift a LENGTH_DATA size block to the left (erasing the 1st second of data)
-	memcpy(&data_10s_ir_filtered[0],&data_10s_ir_filtered[LENGTH_DATA],(LENGTH_DATA_10s-LENGTH_DATA)*4); //Memory copy in the 1st argument from the second with the size in 3rd argument (in bytes)
+	memcpy(&output_buffer[0],&output_buffer[LENGTH_DATA],(LENGTH_DATA_10s-LENGTH_DATA)*4); //Memory copy in the 1st argument from the second with the size in 3rd argument (in bytes)
 
 	//Add a LENGTH_DATA size block on the right (add a new second of data)
-	memcpy(&data_10s_ir_filtered[(LENGTH_DATA_10s-LENGTH_DATA)],data_1s_ir_filtered,LENGTH_DATA*4);
+	memcpy(&output_buffer[(LENGTH_DATA_10s-LENGTH_DATA)],input_buffer,LENGTH_DATA*4);
 
 
 /*=======Values verification=======*/
 	//UART Transmission
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_10s_ir_filtered[(LENGTH_DATA_10s-LENGTH_DATA)], (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_10s_ir_filtered, (uint16_t)4*LENGTH_DATA_10s, HAL_MAX_DELAY);
-//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_1s_ir_filtered, (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)&data_10s_ir_filtered[(LENGTH_DATA_10s-LENGTH_DATA)], (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);		//Last second
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)output_buffer, (uint16_t)4*LENGTH_DATA_10s, HAL_MAX_DELAY);									//Entire buffer
+//	HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_1s_ir_filtered, (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);										//First second
 
 	return DSP_OK;
 }
@@ -175,11 +177,14 @@ float32_t HEART_RATE_CALCULATION(void)
 		//Blue LED
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
 
+		//Delete the older second and add the new one (raw data)
+		ROLL_BUFFER(data_1s_ir, data_10s_ir);
+
 		//Filter
 		IIR_FILTER();
 
 		//Delete the older second and add the new one (filtered data)
-		ROLL_BUFFER();
+		ROLL_BUFFER(data_1s_ir_filtered, data_10s_ir_filtered);
 
 		//Re-initialize variables
 		j = 0;

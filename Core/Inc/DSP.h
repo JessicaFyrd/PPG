@@ -60,7 +60,7 @@ dsp_return_value_t IIR_FILTER(void);
 
 
 //Functions  ==========================================================================================================================================
-dsp_return_value_t ROLL_BUFFER(void);
+dsp_return_value_t ROLL_BUFFER(float32_t *input_buffer, float32_t *output_buffer);
 dsp_return_value_t AUTO_CORRELATION(void);
 float32_t HEART_RATE_CALCULATION(void);
 
