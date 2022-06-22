@@ -20,6 +20,7 @@
 #include "main.h"
 #include "Board.h"
 #include "DSP.h"
+#include "Acquisition.h"
 
 #define LENGTH_WHOLE_DATA 			15807
 
