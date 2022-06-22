@@ -20,8 +20,9 @@
 //Includes
 #include "main.h"
 #include "MAX86916_ppg.h"
-#include "DSP.h"
 #include "Board.h"
+#include "Acquisition.h"
+#include "DSP.h"
 
 
 int main(void)
@@ -29,6 +30,7 @@ int main(void)
   STM_INIT();
   SENSOR_2LED_INIT();
   DSP_INIT();
+
 
 //  //Enable the cycle counter to check duration
 //  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;

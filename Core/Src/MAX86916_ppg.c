@@ -31,7 +31,6 @@
 
 //Includes ===========================================================================================================================================
 #include "MAX86916_ppg.h"
-#include "main.h"
 
 
 //Variables ==========================================================================================================================================
@@ -384,7 +383,7 @@ heartrate10_return_value_t heartrate10_FIFO_RO(MAX86916_FIFO_RO_TypeDef FIFO_RO_
 	return HEARTRATE10_OK;
 }
 
-heartrate10_return_value_t heartrate10_FIFO_A_FULL(MAX86916_FIFO_RO_TypeDef FIFO_A_FULL)
+heartrate10_return_value_t heartrate10_FIFO_A_FULL(MAX86916_FIFO_A_FULL_TypeDef FIFO_A_FULL)
 {
     READ(HEARTRATE10_REG_FIFO_CFG, &buf_r);
     buf[0]=FIFO_A_FULL|(buf_r&0b11110000);
