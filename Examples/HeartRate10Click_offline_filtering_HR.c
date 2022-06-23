@@ -28,6 +28,7 @@ uint8_t a = 0;
 
 extern float32_t data_ir[LENGTH_WHOLE_DATA];			//All the offline raw data stocked in an other .c
 extern float32_t data_1s_ir[LENGTH_DATA];
+extern uint8_t flag_filter;
 
 int main(void)
 {
@@ -36,6 +37,7 @@ int main(void)
 	DSP_INIT();
 
 	//Sensor changes
+	heartrate10_A_FULL_EN(MAX86916_A_FULL_DIS);			//Disable interruption when watermark level is reached in FIFO
 	heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);		//Disable interruption when a new sample is in FIFO
 
 	while (1)
@@ -45,6 +47,9 @@ int main(void)
 		{
 			data_1s_ir[a]=(float32_t)data_ir[a];
 		}
+
+		//HR calculation activation
+		flag_filter = 1;
 
 		//Heart rate
 		HEART_RATE_CALCULATION();
