@@ -22,8 +22,6 @@
 #include "DSP.h"
 #include "Acquisition.h"
 
-#define LENGTH_WHOLE_DATA 			15807
-
 uint8_t a = 0;
 
 extern float32_t data_ir[LENGTH_WHOLE_DATA];			//All the offline raw data stocked in an other .c
