@@ -22,9 +22,11 @@
 #include "DSP.h"
 #include "Acquisition.h"
 
-uint8_t a = 0;
+#define LENGTH_WHOLE_DATA 		15807
 
-extern float32_t data_ir[LENGTH_WHOLE_DATA];			//All the offline raw data stocked in an other .c
+uint8_t a = 0, b = 0;
+
+extern float32_t data_ir_off[LENGTH_WHOLE_DATA];			//All the offline raw data stocked in an other .c
 extern float32_t data_1s_ir[LENGTH_DATA];
 extern uint8_t flag_filter;
 
@@ -43,8 +45,9 @@ int main(void)
 		//Divide samples by blocks to simulate the buffer which will stock the 1s online data
 		for (a=0;a<LENGTH_DATA;a++)
 		{
-			data_1s_ir[a]=(float32_t)data_ir[a];
+			data_1s_ir[a]=(float32_t)data_ir_off[a+b*LENGTH_DATA];
 		}
+		b=b+1;
 
 		//HR calculation activation
 		flag_filter = 1;
