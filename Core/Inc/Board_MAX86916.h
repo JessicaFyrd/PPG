@@ -1,26 +1,26 @@
 /*
- * Board.h
+ * Board_MAX86916.h
  *
- *  Created on: 13 Jun 2022
+ *  Created on: 26 juin 2022
  *      Author: Jessica Fayard
  */
 
-#ifndef INC_BOARD_H_
-#define INC_BOARD_H_
-
+#ifndef INC_BOARD_MAX86916_H_
+#define INC_BOARD_MAX86916_H_
 
 
 //Includes ============================================================================================================================================
 #include "main.h"
+#include "MAX86916_ppg.h"
 
 
 //Enumeration types  ==================================================================================================================================
 typedef enum
 {
-   BOARD_OK = 0,
-   BOARD_ERROR = -1
+   BOARD_MAX86916_OK = 0,
+   BOARD_MAX86916_ERROR = -1
 
-} board_return_value_t;
+} board_MAX86916_return_value_t;
 
 
 
@@ -31,12 +31,12 @@ typedef enum
 
 
 //Functions  ==========================================================================================================================================
-void SystemClock_Config(void);
-void MX_USB_PCD_Init(void);
-void MX_ICACHE_Init(void);
-void MX_RTC_Init(void);
-board_return_value_t STM_INIT(void);
+void MX_GPIO_Init(void);
+void MX_I2C2_Init(void);
+void MX_LPUART1_UART_Init(void);
+board_MAX86916_return_value_t STM_INIT_MAX86916(void);
+board_MAX86916_return_value_t SENSOR_2LED_INIT(void);
 
 
 
-#endif /* INC_BOARD_H_ */
+#endif /* INC_BOARD_MAX86916_H_ */

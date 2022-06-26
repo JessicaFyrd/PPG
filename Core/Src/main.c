@@ -21,6 +21,7 @@
 #include "main.h"
 #include "MAX86916_ppg.h"
 #include "Board.h"
+#include "Board_MAX86916.h"
 #include "Acquisition.h"
 #include "DSP.h"
 
@@ -28,6 +29,7 @@
 int main(void)
 {
   STM_INIT();
+  STM_INIT_MAX86916();
   SENSOR_2LED_INIT();
   DSP_INIT();
 
