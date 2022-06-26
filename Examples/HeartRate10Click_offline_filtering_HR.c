@@ -19,6 +19,7 @@
 
 #include "main.h"
 #include "Board.h"
+#include "Board_MAX86916.h"
 #include "DSP.h"
 #include "Acquisition.h"
 
@@ -33,6 +34,7 @@ extern uint8_t flag_filter;
 int main(void)
 {
 	STM_INIT();
+	STM_INIT_MAX86916();
 	SENSOR_2LED_INIT();
 	DSP_INIT();
 
