@@ -38,7 +38,6 @@ I2C_HandleTypeDef I2C;
 HAL_StatusTypeDef fifo_read;
 uint8_t buf_r=0; 				// Read value
 uint8_t buf[32]={0}; 			// Write value
-data_4leds_TypeDef dat;
 
 
 //Functions ==========================================================================================================================================
@@ -60,7 +59,7 @@ heartrate10_return_value_t HEARTRATE10_DEFAULT_4LEDS_CFG(I2C_HandleTypeDef i2c)
         return HEARTRATE10_ERROR;
     }
 
-    //Set flex led mode
+    //Set the led mode
     HEARTRATE10_SET_MODE(MAX86916_MODE_FLEX);
 
     //Set led sequences [ IR, RED, GREEN, BLUE ]
@@ -80,17 +79,17 @@ heartrate10_return_value_t HEARTRATE10_DEFAULT_4LEDS_CFG(I2C_HandleTypeDef i2c)
     READ(HEARTRATE10_REG_MODE_CFG2, &buf_r);
 
     //Set led range
-    HEARTRATE10_LED_RANGE_1(MAX86916_LED_RANGE_50); //current range 0 to 50 mA for the 4 LEDs
+    HEARTRATE10_LED_RANGE_1(MAX86916_LED_RANGE_50); 	//Current range 0 to 50 mA for the 4 LEDs
     HEARTRATE10_LED_RANGE_2(MAX86916_LED_RANGE_50);
     HEARTRATE10_LED_RANGE_3(MAX86916_LED_RANGE_50);
     HEARTRATE10_LED_RANGE_4(MAX86916_LED_RANGE_50);
 
     //Set led power
-    buf[0]=0xFF; //nominal current pulse amplitude of 50.4 mA for all the LEDs
-    HEARTRATE10_LED_POWER_1(buf[0]); //IR
-    HEARTRATE10_LED_POWER_2(buf[0]); //RED
-    HEARTRATE10_LED_POWER_3(buf[0]); //GREEN
-    HEARTRATE10_LED_POWER_4(buf[0]); //BLUE
+    buf[0]=0xFF; 										//nominal current pulse amplitude of 50.4 mA for all the LEDs
+    HEARTRATE10_LED_POWER_1(buf[0]); 					//IR
+    HEARTRATE10_LED_POWER_2(buf[0]); 					//RED
+    HEARTRATE10_LED_POWER_3(buf[0]); 					//GREEN
+    HEARTRATE10_LED_POWER_4(buf[0]); 					//BLUE
 
     //Sample average
     heartrate10_FIFO_SAMPLE_AVERAGE(MAX86916_FIFO_SAMPLE_AVERAGE_1);
@@ -108,7 +107,7 @@ heartrate10_return_value_t HEARTRATE10_DEFAULT_4LEDS_CFG(I2C_HandleTypeDef i2c)
     heartrate10_PROX_INT_EN(MAX86916_PROX_INT_DIS);
     READ(HEARTRATE10_REG_INT_ENABLE, &buf_r);
 
-	READ(HEARTRATE10_REG_INT_STATUS, &buf_r);	//Clean interrupts
+	READ(HEARTRATE10_REG_INT_STATUS, &buf_r);			//Clean interrupts
 
     return HEARTRATE10_OK;
 }
@@ -131,10 +130,10 @@ heartrate10_return_value_t HEARTRATE10_DEFAULT_2LEDS_CFG(I2C_HandleTypeDef i2c)
         return HEARTRATE10_ERROR;
     }
 
-    //Set flex led mode
+    //Set the led mode
     HEARTRATE10_SET_MODE(MAX86916_MODE_LED1_LED2);
 
-    //Set led sequences [ IR, RED, GREEN, BLUE ]
+    //Set led sequences [ IR, RED ]
     	//RED-IR
     HEARTRATE10_SET_LED_SEQUENCE_1(MAX86916_LED_SEQ_LED1);
     HEARTRATE10_SET_LED_SEQUENCE_2(MAX86916_LED_SEQ_LED2);
@@ -151,18 +150,18 @@ heartrate10_return_value_t HEARTRATE10_DEFAULT_2LEDS_CFG(I2C_HandleTypeDef i2c)
     READ(HEARTRATE10_REG_MODE_CFG2, &buf_r);
 
     //Set led range
-    HEARTRATE10_LED_RANGE_1(MAX86916_LED_RANGE_50); //current range 0 to 50 mA for the 4 LEDs
+    HEARTRATE10_LED_RANGE_1(MAX86916_LED_RANGE_50); 		//Current range 0 to 50 mA for the 4 LEDs
     HEARTRATE10_LED_RANGE_2(MAX86916_LED_RANGE_50);
     HEARTRATE10_LED_RANGE_3(MAX86916_LED_RANGE_50);
     HEARTRATE10_LED_RANGE_4(MAX86916_LED_RANGE_50);
 
     //Set led power
-    buf[0]=0xFF; //nominal current pulse amplitude of 50.4 mA for all the LEDs
-    HEARTRATE10_LED_POWER_1(buf[0]); 	//IR
-    HEARTRATE10_LED_POWER_2(buf[0]); 	//RED
-    buf[0]=0x00;
-    HEARTRATE10_LED_POWER_3(buf[0]); 	//nominal current pulse amplitude of 0 mA for green LED
-    HEARTRATE10_LED_POWER_4(buf[0]); 	//nominal current pulse amplitude of 0 mA for blue LED
+    buf[0]=0xFF; 											//Nominal current pulse amplitude of 50.4 mA for the IR and red LEDs
+    HEARTRATE10_LED_POWER_1(buf[0]); 						//IR
+    HEARTRATE10_LED_POWER_2(buf[0]); 						//RED
+    buf[0]=0x00; 											//Turn off the green and blue LEDs
+    HEARTRATE10_LED_POWER_3(buf[0]); 						//GREEN
+    HEARTRATE10_LED_POWER_4(buf[0]); 						//BLUE
 
     //Sample average
     heartrate10_FIFO_SAMPLE_AVERAGE(MAX86916_FIFO_SAMPLE_AVERAGE_1);
@@ -174,13 +173,13 @@ heartrate10_return_value_t HEARTRATE10_DEFAULT_2LEDS_CFG(I2C_HandleTypeDef i2c)
     heartrate10_FIFO_A_FULL(MAX86916_FIFO_A_FULL_20);
 
     //Enable Int on data read
-    heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);					//Disable interruption when a new sample is in FIFO
-    heartrate10_A_FULL_EN(MAX86916_A_FULL_EN);					//Enable interruption when a watermark level of samples is in FIFO
+    heartrate10_SMP_RDY_EN(MAX86916_SMP_RDY_DIS);			//Disable interruption when a new sample is in FIFO
+    heartrate10_A_FULL_EN(MAX86916_A_FULL_EN);				//Enable interruption when a watermark level of samples is in FIFO
     heartrate10_ALC_OVF_EN(MAX86916_ALC_OVF_DIS);
     heartrate10_PROX_INT_EN(MAX86916_PROX_INT_DIS);
     READ(HEARTRATE10_REG_INT_ENABLE, &buf_r);
 
-	READ(HEARTRATE10_REG_INT_STATUS, &buf_r);	//Clean interrupts
+	READ(HEARTRATE10_REG_INT_STATUS, &buf_r);				//Clean interrupts
 
     return HEARTRATE10_OK;
 }

@@ -18,7 +18,7 @@ extern float32_t data_1s_red[LENGTH_DATA];						//1 second red data buffer
 //Variables ===========================================================================================================================================
 arm_biquad_cascade_df2T_instance_f32 S_ir, S_red;				//Type that contains the number of stages, a pointer to the buffer with coefficients and a pointer to the state
 uint16_t max_x = 0;												//The max is the number of points, 2000 here so 16 bits is enough
-uint64_t max_y = 0; 											//In Matlab, the max is about 4,5.10^9 so 32 bits is too short
+uint64_t max_y = 0; 											//In MATLAB, the max is about 4,5.10^9 so 32 bits is too short
 float32_t Heart_Rate = 0;
 
 
@@ -27,7 +27,7 @@ static float32_t iirStateF32_ir[2*NUMBER_STAGE] = {0};			//State IR buffer
 static float32_t iirStateF32_red[2*NUMBER_STAGE] = {0};			//State red buffer
 const float32_t iirCoeffs32[NUMBER_COEFS] =						//Coefficients buffer
 {
-		0.1245,         0,   -0.1245,    1.7492,    -0.7509 	//b0 b1 b2 a1 a2 -->Matlab coefficient with erasing a0 which is 1 and inverted the a signs
+		0.1245,         0,   -0.1245,    1.7492,    -0.7509 	//b0 b1 b2 a1 a2 -->MATLAB coefficient with erasing a0 which is 1 and inverted the a signs
 };
 
 float32_t data_1s_ir_filtered[LENGTH_DATA] = {0};				//Filter IR data 1s buffer
@@ -159,7 +159,7 @@ float32_t HEART_RATE_CALCULATION(void)
 //		HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_10s_ir_filtered, (uint16_t)4*LENGTH_DATA_10s, HAL_MAX_DELAY);									//Entire buffer
 //		HAL_UART_Transmit(&hlpuart1, (uint8_t*)data_10s_ir_filtered, (uint16_t)4*LENGTH_DATA, HAL_MAX_DELAY);										//First second
 //		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&max_x, (uint16_t)2, HAL_MAX_DELAY);
-		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&Heart_Rate, (uint16_t)4, HAL_MAX_DELAY);
+//		HAL_UART_Transmit(&hlpuart1, (uint8_t*)&Heart_Rate, (uint16_t)4, HAL_MAX_DELAY);
 
 /*========Time verification========*/
 		//End time
